@@ -1,7 +1,9 @@
 const SIZE = 7;
 const MAX_ENERGY = 48;
-const MAX_LEVEL = 8;
 const SAVE_KEY = "penguin-gym-save-v3";
+const TYPE_UNLOCK_LEVEL = { fish: 1, shrimp: 1, shell: 6, squid: 12 };
+const TYPE_LABELS = { fish: "小鱼干", shrimp: "小虾干", shell: "贝壳", squid: "鱿鱼" };
+const TYPE_ORDER = { fish: 0, shrimp: 1, shell: 2, squid: 3 };
 
 const catalog = {
   fish: [
@@ -24,10 +26,52 @@ const catalog = {
     "火山虾干",
     "巨钳虾干",
   ],
+  shell: [
+    "沙纹小贝",
+    "蓝霜贝",
+    "紫珍珠贝",
+    "粉潮贝",
+    "星海王冠贝",
+    "微笑珍珠贝",
+    "蓝珠珍贝",
+    "月光珍珠贝",
+    "珊瑚星贝",
+    "皇家海心贝",
+  ],
+  squid: [
+    "小白鱿",
+    "粉鳍鱿",
+    "点点鱿",
+    "赤尾鱿",
+    "红潮鱿",
+    "紫梦鱿",
+    "蓝晶鱿",
+    "星砂鱿",
+    "星夜鱿",
+    "皇冠星鱿",
+  ],
 };
 
-const rewards = [2, 5, 10, 20, 38, 72, 135, 250];
-const members = ["北极上班族", "跳水新人", "银背会员", "破冰舞者", "鳍力教练", "雪地马拉松员"];
+const rewards = [2, 5, 10, 20, 38, 72, 135, 250, 460, 820];
+const members = [
+  { id: "marathon", name: "雪地马拉松员", avatar: "member-01.png" },
+  { id: "coach", name: "魅力教练", avatar: "member-02.png" },
+  { id: "diver", name: "跳水新人", avatar: "member-03.png" },
+  { id: "office", name: "北极上班族", avatar: "member-04.png" },
+  { id: "collector", name: "海风收藏家", avatar: "member-05.png" },
+  { id: "lighthouse", name: "灯塔守夜员", avatar: "member-06.png" },
+  { id: "dockworker", name: "码头搬运员", avatar: "member-07.png" },
+  { id: "angler", name: "冰湖钓手", avatar: "member-08.png" },
+  { id: "chef", name: "虾虾厨师", avatar: "member-09.png" },
+  { id: "host", name: "节日主持人", avatar: "member-10.png" },
+  { id: "stargazer", name: "星光观测员", avatar: "member-11.png" },
+  { id: "climber", name: "峰顶探险家", avatar: "member-12.png" },
+];
+const energyPacks = [
+  { id: "sip", label: "小罐能量", amount: 10, cost: 60 },
+  { id: "bottle", label: "双倍能量", amount: 24, cost: 130 },
+  { id: "feast", label: "满满精神", amount: MAX_ENERGY, cost: 240, full: true },
+];
 
 const moodImages = {
   idle: "penguin-01.png",
@@ -150,6 +194,30 @@ const discoveryLines = {
     "这只虾有大钳子！看起来可以夹住很多建设材料。",
     "好漂亮的龙虾！像海里的宝石一样亮晶晶。",
     "超级大龙虾出现啦！有了它，Mountain 小宝 一定会更豪华！",
+  ],
+  shell: [
+    "发现小贝壳啦！海浪把它轻轻推到了冰山边。",
+    "蓝色贝壳闪闪发亮，小宝想把它放进收藏盒。",
+    "里面好像有珍珠！订单客人一定会喜欢。",
+    "粉色贝壳像晚霞一样柔软，太漂亮啦。",
+    "这枚贝壳有金色花纹，看起来很贵重。",
+    "珍珠贝笑起来了，小宝也跟着开心。",
+    "蓝珠珍贝出现！它像一小片冰湖。",
+    "月光珍珠贝亮晶晶，是高级订单的好材料。",
+    "珊瑚星贝带着海星和珊瑚，像一个小舞台。",
+    "皇家海心贝出现！这一定是冰山收藏馆的镇馆之宝。",
+  ],
+  squid: [
+    "小白鱿探头啦！它比雪花还轻。",
+    "粉鳍鱿软乎乎的，游起来像小伞。",
+    "点点鱿来了，身上有可爱的斑点。",
+    "赤尾鱿长大了，触手也更灵活。",
+    "红潮鱿出现，颜色像夕阳照在海面上。",
+    "紫梦鱿闪着梦幻色，小宝看得入迷。",
+    "蓝晶鱿像冰晶一样清透，适合高级订单。",
+    "星砂鱿带着星星纹路，好像从夜空游来。",
+    "星夜鱿出现！小宝觉得它会魔法。",
+    "皇冠星鱿是传说级鱿鱼，整座冰山都亮起来啦！",
   ],
 };
 
@@ -331,8 +399,12 @@ const levelEl = document.querySelector("#level");
 const ordersEl = document.querySelector("#orders");
 const fishCollectionEl = document.querySelector("#fishCollection");
 const shrimpCollectionEl = document.querySelector("#shrimpCollection");
+const shellCollectionEl = document.querySelector("#shellCollection");
+const squidCollectionEl = document.querySelector("#squidCollection");
 const fishCollectionCountEl = document.querySelector("#fishCollectionCount");
 const shrimpCollectionCountEl = document.querySelector("#shrimpCollectionCount");
+const shellCollectionCountEl = document.querySelector("#shellCollectionCount");
+const squidCollectionCountEl = document.querySelector("#squidCollectionCount");
 const coachLineEl = document.querySelector("#coachLine");
 const toastEl = document.querySelector("#toast");
 const spawnBtn = document.querySelector("#spawnBtn");
@@ -361,6 +433,12 @@ const buildMapEl = document.querySelector("#buildMap");
 const buildLevelEl = document.querySelector("#buildLevel");
 const buildProgressEl = document.querySelector("#buildProgress");
 const buildCloseBtn = document.querySelector("#buildCloseBtn");
+const xpFillEl = document.querySelector("#xpFill");
+const xpTextEl = document.querySelector("#xpText");
+const energyStatBtn = document.querySelector("#energyStat");
+const energyLayerEl = document.querySelector("#energyLayer");
+const energyCloseBtn = document.querySelector("#energyCloseBtn");
+const energyPacksEl = document.querySelector("#energyPacks");
 const selectedTileNameEl = document.querySelector("#selectedTileName");
 const selectedTileDescEl = document.querySelector("#selectedTileDesc");
 const sellBtn = document.querySelector("#sellBtn");
@@ -389,7 +467,7 @@ function defaultState() {
     energy: 34,
     level: 1,
     xp: 0,
-    discovered: { fish: [1, 2], shrimp: [1, 2] },
+    discovered: { fish: [1, 2], shrimp: [1, 2], shell: [], squid: [] },
     orders: buildOrders(1, board),
     lastEnergyAt: Date.now(),
     story: {
@@ -450,6 +528,8 @@ function normalizeDiscovered(discovered) {
   return {
     fish: Array.isArray(discovered?.fish) ? discovered.fish : [1, 2],
     shrimp: Array.isArray(discovered?.shrimp) ? discovered.shrimp : [1, 2],
+    shell: Array.isArray(discovered?.shell) ? discovered.shell : [],
+    squid: Array.isArray(discovered?.squid) ? discovered.squid : [],
   };
 }
 
@@ -470,8 +550,27 @@ function saveState() {
   localStorage.setItem(SAVE_KEY, JSON.stringify(state));
 }
 
+function maxLevelFor(type) {
+  return catalog[type]?.length || 1;
+}
+
+function xpNeeded(level = state.level) {
+  return level * 36;
+}
+
+function unlockedTypes(level = state.level) {
+  return Object.keys(catalog).filter((type) => level >= TYPE_UNLOCK_LEVEL[type]);
+}
+
+function normalizeOrderMember(memberRef) {
+  if (typeof memberRef === "object" && memberRef?.id) {
+    return members.find((member) => member.id === memberRef.id) || memberRef;
+  }
+  return members.find((member) => member.id === memberRef || member.name === memberRef) || members[0];
+}
+
 function itemName(tile) {
-  return catalog[tile.type][tile.level - 1];
+  return catalog[tile.type]?.[tile.level - 1] || "未知素材";
 }
 
 function assetFor(tile) {
@@ -479,7 +578,7 @@ function assetFor(tile) {
 }
 
 function rewardFor(tile) {
-  return rewards[tile.level - 1];
+  return rewards[tile.level - 1] || rewards[rewards.length - 1];
 }
 
 function sameTile(a, b) {
@@ -490,6 +589,9 @@ function render() {
   coinsEl.textContent = state.coins;
   energyEl.textContent = `${state.energy}/${MAX_ENERGY}`;
   levelEl.textContent = `${state.level}`;
+  const xpRatio = Math.max(0, Math.min(1, state.xp / xpNeeded()));
+  xpFillEl.style.width = `${Math.round(xpRatio * 100)}%`;
+  xpTextEl.textContent = `${Math.round(xpRatio * 100)}%`;
   spawnBtn.disabled = state.energy <= 0 || freeCells().length === 0;
   newOrdersBtn.disabled = state.coins < 30;
 
@@ -518,9 +620,12 @@ function render() {
   renderOrders();
   renderCollection("fish", fishCollectionEl, fishCollectionCountEl);
   renderCollection("shrimp", shrimpCollectionEl, shrimpCollectionCountEl);
+  renderCollection("shell", shellCollectionEl, shellCollectionCountEl);
+  renderCollection("squid", squidCollectionEl, squidCollectionCountEl);
   renderSelectedInfo();
   if (shopLayerEl?.classList.contains("open")) renderShop();
   if (buildLayerEl?.classList.contains("open")) renderBuildMap();
+  if (energyLayerEl?.classList.contains("open")) renderEnergyPacks();
   saveState();
 }
 
@@ -530,6 +635,7 @@ function renderOrders() {
     const orderEl = document.createElement("article");
     orderEl.className = "order";
     const ready = canFulfill(order);
+    const member = normalizeOrderMember(order.memberId || order.member);
     const needs = order.needs.map((tile) => {
       const has = boardHas(tile);
       return `<span class="need ${has ? "done" : ""}" title="${itemName(tile)}">
@@ -540,7 +646,8 @@ function renderOrders() {
 
     orderEl.innerHTML = `
       <div class="order-top">
-        <span class="order-title">${order.member}</span>
+        <img class="member-avatar" src="assets/${member.avatar}" alt="" />
+        <span class="order-title">${member.name}</span>
         <span class="order-reward">+${order.reward} 金币</span>
       </div>
       <div class="needs">${needs}</div>
@@ -551,9 +658,11 @@ function renderOrders() {
 }
 
 function renderCollection(type, element, countElement) {
+  if (!element || !countElement) return;
   const unlocked = new Set(state.discovered[type]);
-  countElement.textContent = `${unlocked.size}/${MAX_LEVEL}`;
-  element.innerHTML = Array.from({ length: MAX_LEVEL }, (_, i) => {
+  const maxLevel = maxLevelFor(type);
+  countElement.textContent = `${unlocked.size}/${maxLevel}`;
+  element.innerHTML = Array.from({ length: maxLevel }, (_, i) => {
     const level = i + 1;
     const tile = { type, level };
     return `
@@ -576,7 +685,7 @@ function renderSelectedInfo() {
 
   const reward = rewardFor(tile);
   selectedTileNameEl.textContent = `${itemName(tile)} · ${tile.level}级`;
-  selectedTileDescEl.textContent = `${tile.type === "fish" ? "小鱼干" : "小虾干"}链路棋子，合成奖励 ${reward} 金币，出售可获得 ${Math.max(1, Math.floor(reward / 2))} 金币。`;
+  selectedTileDescEl.textContent = `${TYPE_LABELS[tile.type] || "素材"}链路棋子，合成奖励 ${reward} 金币，出售可获得 ${Math.max(1, Math.floor(reward / 2))} 金币。`;
   sellBtn.disabled = false;
 }
 
@@ -806,7 +915,7 @@ function addDiscovered(tile) {
   if (!list.includes(tile.level)) {
     list.push(tile.level);
     const line = discoveryLines[tile.type][tile.level - 1];
-    setHeroMood(tile.type === "fish" ? "proud" : "love", line);
+    setHeroMood(tile.type === "fish" || tile.type === "shell" ? "proud" : "love", line);
     showToast(`发现新食材：${itemName(tile)}`);
     return true;
   }
@@ -815,7 +924,7 @@ function addDiscovered(tile) {
 
 function addXp(amount) {
   state.xp += amount;
-  const needed = state.level * 36;
+  const needed = xpNeeded();
   if (state.xp >= needed) {
     state.xp -= needed;
     state.level = Math.min(1000, state.level + 1);
@@ -825,9 +934,11 @@ function addXp(amount) {
 }
 
 function randomSpawnTile() {
-  const type = Math.random() > 0.42 ? "fish" : "shrimp";
+  const available = unlockedTypes();
+  const type = randomOf(available);
   const roll = Math.random();
-  const level = roll > 0.9 && state.level >= 3 ? 3 : roll > 0.5 ? 2 : 1;
+  const typeMax = Math.min(3, maxLevelFor(type));
+  const level = Math.min(typeMax, roll > 0.9 && state.level >= 3 ? 3 : roll > 0.5 ? 2 : 1);
   return { type, level };
 }
 
@@ -871,7 +982,7 @@ function moveOrMerge(from, to) {
   }
 
   if (sameTile(source, target)) {
-    if (source.level >= MAX_LEVEL) {
+    if (source.level >= maxLevelFor(source.type)) {
       selectedIndex = null;
       setHeroMood("shock", randomOf(dialogueBank.maxed));
       showToast(`${itemName(source)} 已经是最高级了。`);
@@ -916,10 +1027,9 @@ function moveOrMerge(from, to) {
 
 function tidyBoard() {
   markAction();
-  const typeOrder = { fish: 0, shrimp: 1 };
   const occupied = state.board
     .filter(Boolean)
-    .sort((a, b) => typeOrder[a.type] - typeOrder[b.type] || a.level - b.level);
+    .sort((a, b) => TYPE_ORDER[a.type] - TYPE_ORDER[b.type] || a.level - b.level);
   state.board = occupied.concat(Array(SIZE * SIZE - occupied.length).fill(null));
   selectedIndex = null;
   setHeroMood("proud", randomOf(dialogueBank.tidy));
@@ -997,22 +1107,26 @@ function buildOrders(level, board) {
 }
 
 function buildOrder(level, board) {
-  const highest = Math.min(MAX_LEVEL, Math.max(2, Math.ceil(level / 2) + 2));
+  const available = unlockedTypes(level);
   const needsCount = Math.random() > 0.68 ? 2 : 1;
-  const existing = board.filter(Boolean);
+  const existing = board.filter((tile) => tile && available.includes(tile.type));
   const needs = [];
 
   for (let i = 0; i < needsCount; i += 1) {
     const useExisting = existing.length && Math.random() > 0.55;
+    const type = useExisting ? null : randomOf(available);
+    const highest = type ? Math.min(maxLevelFor(type), Math.max(2, Math.ceil(level / 2) + 2)) : null;
     const need = useExisting
       ? { ...randomOf(existing) }
-      : { type: Math.random() > 0.48 ? "fish" : "shrimp", level: 1 + Math.floor(Math.random() * highest) };
-    needs.push({ type: need.type, level: Math.min(MAX_LEVEL, need.level) });
+      : { type, level: 1 + Math.floor(Math.random() * highest) };
+    needs.push({ type: need.type, level: Math.min(maxLevelFor(need.type), need.level) });
   }
 
   const reward = needs.reduce((sum, need) => sum + rewardFor(need) * 7, 20 + level * 8);
+  const member = randomOf(members);
   return {
-    member: randomOf(members),
+    member: member.name,
+    memberId: member.id,
     needs,
     reward,
   };
@@ -1028,6 +1142,58 @@ function refreshOrders() {
   state.orders = buildOrders(state.level, state.board);
   setHeroMood("wink", randomOf(dialogueBank.refreshOrders));
   render();
+}
+
+function openEnergyMenu() {
+  markAction();
+  energyLayerEl.classList.add("open");
+  energyLayerEl.setAttribute("aria-hidden", "false");
+  renderEnergyPacks();
+  setHeroMood("confused", "小黑豆来了！它说金币可以换成一点点继续努力的能量。");
+}
+
+function closeEnergyMenu() {
+  energyLayerEl.classList.remove("open");
+  energyLayerEl.setAttribute("aria-hidden", "true");
+}
+
+function renderEnergyPacks() {
+  const remaining = Math.max(0, MAX_ENERGY - state.energy);
+  energyPacksEl.innerHTML = energyPacks.map((pack) => {
+    const amount = pack.full ? remaining : Math.min(pack.amount, remaining);
+    const disabled = amount <= 0 || state.coins < pack.cost;
+    const status = amount <= 0 ? "能量已满" : state.coins < pack.cost ? "金币不足" : `+${amount} 能量`;
+    return `
+      <button class="energy-pack" type="button" data-energy-pack="${pack.id}" ${disabled ? "disabled" : ""}>
+        <img src="assets/resource-energy.png" alt="" />
+        <span>${pack.label}</span>
+        <strong>${status}</strong>
+        <em>${pack.cost} 金币</em>
+      </button>
+    `;
+  }).join("");
+}
+
+function buyEnergyPack(id) {
+  const pack = energyPacks.find((entry) => entry.id === id);
+  if (!pack) return;
+  const remaining = Math.max(0, MAX_ENERGY - state.energy);
+  const amount = pack.full ? remaining : Math.min(pack.amount, remaining);
+  if (amount <= 0) {
+    setHeroMood("proud", "能量已经满啦，小黑豆把罐子先收起来。");
+    return showToast("能量已经满了。");
+  }
+  if (state.coins < pack.cost) {
+    setHeroMood("cry", "金币不够，小黑豆的小罐子暂时打不开。");
+    return showToast("金币不足。");
+  }
+  state.coins -= pack.cost;
+  state.energy = Math.min(MAX_ENERGY, state.energy + amount);
+  state.lastEnergyAt = Date.now();
+  setHeroMood("cheer", `小黑豆帮忙补充了 ${amount} 点能量！`);
+  showToast(`能量 +${amount}`);
+  render();
+  animateReward(energyLayerEl.getBoundingClientRect(), `+${amount} 能量`);
 }
 
 function randomOf(list) {
@@ -1298,8 +1464,10 @@ tipBtn.addEventListener("click", () => {
 });
 shopBtn.addEventListener("click", () => openShop());
 buildBtn.addEventListener("click", openBuildMap);
+energyStatBtn.addEventListener("click", openEnergyMenu);
 shopCloseBtn.addEventListener("click", closeShop);
 buildCloseBtn.addEventListener("click", closeBuildMap);
+energyCloseBtn.addEventListener("click", closeEnergyMenu);
 shopTabButtons.forEach((button) => {
   button.addEventListener("click", () => {
     state.shop.activeTab = button.dataset.shopTab;
@@ -1317,6 +1485,11 @@ buildMapEl.addEventListener("click", (event) => {
   const button = event.target.closest("[data-build-node]");
   if (!button) return;
   buildNode(button.dataset.buildNode);
+});
+energyPacksEl.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-energy-pack]");
+  if (!button) return;
+  buyEnergyPack(button.dataset.energyPack);
 });
 newOrdersBtn.addEventListener("click", refreshOrders);
 dialogueNextBtn.addEventListener("click", nextDialogue);

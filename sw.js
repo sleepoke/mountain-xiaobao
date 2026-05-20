@@ -1,9 +1,9 @@
-const CACHE_NAME = "mountain-xiaobao-v2-mobile-orders";
+const CACHE_NAME = "mountain-xiaobao-v3-new-items-energy";
 const CORE_ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=20260519-mobile-orders",
-  "./game.js?v=20260519-mobile-orders",
+  "./styles.css?v=20260519-new-items-energy",
+  "./game.js?v=20260519-new-items-energy",
   "./manifest.webmanifest",
   "./assets/penguin-01.png",
   "./assets/resource-coins.png",
