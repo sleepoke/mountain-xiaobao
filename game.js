@@ -113,6 +113,10 @@ const SURFING_REWARD_LABELS = {
   plank: "雪花木板",
   star: "星星",
 };
+const SURF_TICK_MS = 70;
+const SURF_PROGRESS_PER_TICK = 0.09;
+const SURF_PLAYER_Y = 82;
+const SURF_LANE_X = [24, 50, 76];
 const surfingStages = [
   { id: "shore", name: "近岸练习", target: { fish: 5 }, duration: 26, unlockLevel: 1, recommendedBoard: "wood_board" },
   { id: "shell_shallows", name: "贝壳浅滩", target: { shell: 3, coins: 10 }, duration: 32, unlockLevel: 4, recommendedBoard: "shell_board" },
@@ -1076,6 +1080,7 @@ function createFishingState() {
     scanArea: [],
     status: "playing",
     claimed: false,
+    goalReached: false,
     message: "选择下钩、标记、扫描或提示，避开海豹收集奖励。",
     rewards: { fish: 0, shrimp: 0, shell: 0, squid: 0, gold: 0, energy: 0 },
   };
@@ -1315,7 +1320,12 @@ function checkFishingEnd() {
   const closedSafeCells = fishingState.cells.some((cell) => !cell.isSeal && !cell.isOpen);
   const goalsDone = Object.entries(FISHING_GOALS)
     .every(([type, goal]) => fishingState.rewards[type] >= goal);
-  if (fishingState.lives <= 0 || fishingState.actions <= 0 || !closedSafeCells || goalsDone) {
+  if (goalsDone && !fishingState.goalReached && fishingState.actions > 0 && fishingState.lives > 0 && closedSafeCells) {
+    fishingState.goalReached = true;
+    fishingState.message = "目标已经完成啦！还可以继续钓，带回更多小鱼小虾。";
+    setHeroMood("cheer", "目标达成！趁体力还够，我们可以再多捞一点。");
+  }
+  if (fishingState.lives <= 0 || fishingState.actions <= 0 || !closedSafeCells) {
     finishFishingGame(goalsDone || !closedSafeCells ? "catch" : "tired");
   }
 }
@@ -1390,6 +1400,8 @@ function createSurfSelectState() {
     lane: 1,
     progress: 0,
     objects: [],
+    effects: [],
+    lastSpawnAt: -1,
     durability: 3,
     combo: 0,
     maxCombo: 0,
@@ -1412,6 +1424,8 @@ function startSurfRun() {
   surfState.lane = 1;
   surfState.progress = 0;
   surfState.objects = [];
+  surfState.effects = [];
+  surfState.lastSpawnAt = -1;
   surfState.durability = 3 + (surfState.boardId === "blue_board" || surfState.boardId === "champion_board" ? 1 : 0);
   surfState.combo = 0;
   surfState.maxCombo = 0;
@@ -1423,6 +1437,7 @@ function startSurfRun() {
   setHeroMood("cheer", "小宝站稳啦，花生也准备好了！");
   render();
   startSurfTimer();
+  renderSurfGame();
 }
 
 function currentSurfStage() {
@@ -1435,7 +1450,7 @@ function currentSurfBoard() {
 
 function startSurfTimer() {
   stopSurfTimer();
-  surfTimer = setInterval(tickSurfRun, 760);
+  surfTimer = setInterval(tickSurfRun, SURF_TICK_MS);
 }
 
 function stopSurfTimer() {
@@ -1446,13 +1461,20 @@ function stopSurfTimer() {
 function tickSurfRun() {
   if (!surfState || surfState.status !== "playing") return;
   const stage = currentSurfStage();
-  surfState.progress += 1;
+  surfState.progress += SURF_PROGRESS_PER_TICK;
   surfState.objects.forEach((object) => {
-    object.row += 1;
+    object.y += object.speed;
   });
+  surfState.effects = (surfState.effects || [])
+    .map((effect) => ({ ...effect, age: effect.age + 1, y: effect.y - 0.42 }))
+    .filter((effect) => effect.age < effect.life);
   resolveSurfCollisions();
-  surfState.objects = surfState.objects.filter((object) => object.row < 5 && !object.collected);
-  if (Math.random() < 0.86) surfState.objects.push(createSurfObject(stage));
+  surfState.objects = surfState.objects.filter((object) => object.y < 108 && !object.collected);
+  const spawnGap = Math.max(0.46, 0.75 - Math.min(0.22, surfState.progress / 220));
+  if (surfState.progress - surfState.lastSpawnAt >= spawnGap && Math.random() < 0.72) {
+    surfState.objects.push(createSurfObject(stage));
+    surfState.lastSpawnAt = surfState.progress;
+  }
   if (surfState.progress >= stage.duration || surfState.durability <= 0) finishSurfRun();
   renderSurfGame();
 }
@@ -1467,26 +1489,42 @@ function createSurfObject(stage) {
       : ["fish", "fish", "shrimp", "coins", "energy"];
   if (roll < 0.68) {
     const type = randomOf(rewardPool);
-    return { id: `${Date.now()}-${Math.random()}`, kind: "reward", type, lane, row: 0 };
+    return {
+      id: `${Date.now()}-${Math.random()}`,
+      kind: "reward",
+      type,
+      lane,
+      y: -10,
+      speed: 1.6 + Math.random() * 0.42,
+    };
   }
   const obstaclePool = ["ice", "seal", "wave", "driftwood", "rock", "whirlpool", "iceberg"];
-  return { id: `${Date.now()}-${Math.random()}`, kind: "obstacle", type: randomOf(obstaclePool), lane, row: 0 };
+  return {
+    id: `${Date.now()}-${Math.random()}`,
+    kind: "obstacle",
+    type: randomOf(obstaclePool),
+    lane,
+    y: -12,
+    speed: 1.52 + Math.random() * 0.42,
+  };
 }
 
 function resolveSurfCollisions() {
   surfState.objects.forEach((object) => {
-    if (object.row < 4 || object.collected) return;
+    if (object.y < SURF_PLAYER_Y - 7 || object.y > SURF_PLAYER_Y + 11 || object.collected) return;
     if (object.kind === "reward" && (object.lane === surfState.lane || surfState.magnet > 0)) {
-      collectSurfReward(object.type);
+      const gain = collectSurfReward(object.type);
       object.collected = true;
       surfState.combo += 1;
       surfState.maxCombo = Math.max(surfState.maxCombo, surfState.combo);
       if (surfState.combo === 5) surfState.rewards.coins += 5;
       if (surfState.combo === 10) surfState.rewards.fish += 1;
       surfState.message = `收集到${SURFING_REWARD_LABELS[object.type]}，连击 ${surfState.combo}！`;
+      addSurfEffect("reward", `+${gain} ${SURFING_REWARD_LABELS[object.type]}`, object.lane, object.y, surfRewardAsset(object.type));
+      setHeroMood("wink", surfState.message);
     } else if (object.kind === "obstacle" && object.lane === surfState.lane) {
       object.collected = true;
-      hitSurfObstacle(object.type);
+      hitSurfObstacle(object.type, object.lane, object.y);
     }
   });
   if (surfState.magnet > 0) surfState.magnet -= 1;
@@ -1495,24 +1533,44 @@ function resolveSurfCollisions() {
 function collectSurfReward(type) {
   const gain = type === "coins" ? 6 + Math.floor(Math.random() * 8) : 1;
   surfState.rewards[type] += gain;
+  return gain;
 }
 
-function hitSurfObstacle(type) {
+function hitSurfObstacle(type, lane = surfState.lane, y = SURF_PLAYER_Y) {
   if (type === "wave") {
     surfState.lane = Math.max(0, Math.min(2, surfState.lane + (Math.random() > 0.5 ? 1 : -1)));
     surfState.message = "浪花把小宝推到旁边海路啦！";
+    addSurfEffect("wave", "换道！", lane, y, surfObjectAsset({ kind: "obstacle", type }));
   }
   if (type !== "wave") {
     if (surfState.shield > 0) {
       surfState.shield -= 1;
       surfState.message = "护盾挡住了一次碰撞！";
+      addSurfEffect("shield", "护盾", lane, y, "assets/surfing/skill-shield.png");
     } else {
       surfState.durability -= 1;
-      surfState.message = type === "seal" ? "海豹探头吓了小宝一跳，耐久 -1。" : "撞到漂流木，耐久 -1。";
+      const label = type === "seal" ? "海豹！" : type === "rock" ? "石头！" : type === "whirlpool" ? "漩涡！" : "撞到啦！";
+      surfState.message = type === "seal" ? "海豹探头吓了小宝一跳，耐久 -1。" : `${label}耐久 -1。`;
+      addSurfEffect("hit", "-1", lane, y, surfObjectAsset({ kind: "obstacle", type }));
     }
   }
   surfState.combo = 0;
   setHeroMood("sweat", surfState.message);
+}
+
+function addSurfEffect(kind, text, lane, y, icon = "") {
+  if (!surfState) return;
+  surfState.effects = surfState.effects || [];
+  surfState.effects.push({
+    id: `${Date.now()}-${Math.random()}`,
+    kind,
+    text,
+    icon,
+    lane,
+    y,
+    age: 0,
+    life: 14,
+  });
 }
 
 function finishSurfRun() {
@@ -1546,8 +1604,18 @@ function applySurfRewards() {
 
 function moveSurfLane(direction) {
   if (!surfState || surfState.status !== "playing") return;
-  surfState.lane = Math.max(0, Math.min(2, surfState.lane + direction));
+  const nextLane = Math.max(0, Math.min(2, surfState.lane + direction));
+  if (nextLane === surfState.lane) {
+    addSurfEffect("wave", "边界", surfState.lane, SURF_PLAYER_Y);
+    return renderSurfGame();
+  }
+  surfState.lane = nextLane;
+  addSurfEffect("move", direction < 0 ? "左滑" : "右滑", surfState.lane, SURF_PLAYER_Y + 2);
   renderSurfGame();
+}
+
+function surfLaneX(lane) {
+  return SURF_LANE_X[Math.max(0, Math.min(SURF_LANE_X.length - 1, lane))];
 }
 
 function renderSurfGame() {
@@ -1561,29 +1629,50 @@ function renderSurfGame() {
     return;
   }
   const stage = currentSurfStage();
-  const cells = Array.from({ length: 15 }, (_, index) => {
-    const row = Math.floor(index / 3);
-    const lane = index % 3;
-    const object = surfState.objects.find((entry) => entry.row === row && entry.lane === lane && !entry.collected);
-    return `
-      <div class="surf-lane-cell ${lane === surfState.lane && row === 4 ? "player-cell" : ""}">
-        ${object ? `<img class="surf-object ${object.kind}" src="${surfObjectAsset(object)}" alt="" />` : ""}
-        ${lane === surfState.lane && row === 4 ? `<img class="surf-player" src="assets/surfing/char-penguin-surf.png" alt="" />` : ""}
-      </div>
-    `;
-  }).join("");
+  const progressValue = Math.min(stage.duration, Math.floor(surfState.progress));
+  const laneGuides = [0, 1, 2]
+    .map((lane) => `<span class="surf-lane-guide" style="--lane-x:${surfLaneX(lane)}%;"></span>`)
+    .join("");
+  const objects = surfState.objects.map((object) => `
+    <img
+      class="surf-object ${object.kind} ${object.type}"
+      src="${surfObjectAsset(object)}"
+      alt=""
+      style="--lane-x:${surfLaneX(object.lane)}%; --object-y:${object.y}%; z-index:${10 + Math.round(object.y)};"
+    />
+  `).join("");
+  const effects = (surfState.effects || []).map((effect) => `
+    <span
+      class="surf-effect ${effect.kind}"
+      style="--lane-x:${surfLaneX(effect.lane)}%; --object-y:${effect.y}%;"
+    >
+      ${effect.icon ? `<img src="${effect.icon}" alt="" />` : ""}
+      <b>${effect.text}</b>
+    </span>
+  `).join("");
+  const playerHit = (surfState.effects || []).some((effect) => effect.kind === "hit" && effect.age < 4);
   surfGameEl.innerHTML = `
     <div class="surf-hud">
       <span>${stage.name}</span>
-      <span>进度 ${Math.min(stage.duration, surfState.progress)}/${stage.duration}</span>
+      <span>进度 ${progressValue}/${stage.duration}</span>
       <span>耐久 ${Math.max(0, surfState.durability)}</span>
       <span>连击 ${surfState.combo}</span>
     </div>
     <div class="surf-message">${surfState.message}</div>
-    <div class="surf-track">${cells}</div>
+    <div class="surf-track ${surfTimer ? "running" : "paused"}">
+      ${laneGuides}
+      ${objects}
+      ${effects}
+      <img
+        class="surf-player ${playerHit ? "hit" : ""}"
+        src="assets/surfing/char-penguin-surf.png"
+        alt=""
+        style="--lane-x:${surfLaneX(surfState.lane)}%;"
+      />
+    </div>
     <div class="surf-controls">
       <button type="button" data-surf-action="left">左</button>
-      <button class="primary" type="button" data-surf-action="pause">暂停</button>
+      <button class="primary" type="button" data-surf-action="pause">${surfTimer ? "暂停" : "继续"}</button>
       <button type="button" data-surf-action="right">右</button>
     </div>
   `;
