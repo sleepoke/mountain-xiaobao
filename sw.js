@@ -1,9 +1,9 @@
-const CACHE_NAME = "mountain-xiaobao-v5-minigames-economy";
+const CACHE_NAME = "mountain-xiaobao-v6-minigames-assets";
 const CORE_ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=20260520-minigames-economy",
-  "./game.js?v=20260520-minigames-economy",
+  "./styles.css?v=20260520-minigames-assets",
+  "./game.js?v=20260520-minigames-assets",
   "./manifest.webmanifest",
   "./assets/penguin-01.png",
   "./assets/resource-coins.png",

@@ -1452,7 +1452,7 @@ function createSurfObject(stage) {
     const type = randomOf(rewardPool);
     return { id: `${Date.now()}-${Math.random()}`, kind: "reward", type, lane, row: 0 };
   }
-  const obstaclePool = ["ice", "seal", "wave", "driftwood"];
+  const obstaclePool = ["ice", "seal", "wave", "driftwood", "rock", "whirlpool", "iceberg"];
   return { id: `${Date.now()}-${Math.random()}`, kind: "obstacle", type: randomOf(obstaclePool), lane, row: 0 };
 }
 
@@ -1485,7 +1485,7 @@ function hitSurfObstacle(type) {
     surfState.lane = Math.max(0, Math.min(2, surfState.lane + (Math.random() > 0.5 ? 1 : -1)));
     surfState.message = "浪花把小宝推到旁边海路啦！";
   }
-  if (type !== "ice" && type !== "wave") {
+  if (type !== "wave") {
     if (surfState.shield > 0) {
       surfState.shield -= 1;
       surfState.message = "护盾挡住了一次碰撞！";
@@ -1551,7 +1551,7 @@ function renderSurfGame() {
     return `
       <div class="surf-lane-cell ${lane === surfState.lane && row === 4 ? "player-cell" : ""}">
         ${object ? `<img class="surf-object ${object.kind}" src="${surfObjectAsset(object)}" alt="" />` : ""}
-        ${lane === surfState.lane && row === 4 ? `<img class="surf-player" src="assets/penguin-13.png" alt="" />` : ""}
+        ${lane === surfState.lane && row === 4 ? `<img class="surf-player" src="assets/surfing/char-penguin-surf.png" alt="" />` : ""}
       </div>
     `;
   }).join("");
@@ -1636,17 +1636,20 @@ function surfObjectAsset(object) {
   if (object.type === "seal") return "assets/surfing/obstacle-seal.png";
   if (object.type === "wave") return "assets/surfing/obstacle-wave.png";
   if (object.type === "driftwood") return "assets/surfing/obstacle-driftwood.png";
-  return "assets/fishing/tiles/tile-cracked.png";
+  if (object.type === "rock") return "assets/surfing/obstacle-rock.png";
+  if (object.type === "whirlpool") return "assets/surfing/obstacle-whirlpool.png";
+  if (object.type === "iceberg") return "assets/surfing/obstacle-iceberg.png";
+  return "assets/surfing/obstacle-ice-floe.png";
 }
 
 function surfRewardAsset(type) {
-  if (type === "fish") return "assets/fishing/rewards/reward-fish.png";
-  if (type === "shrimp") return "assets/fishing/rewards/reward-shrimp.png";
-  if (type === "shell") return "assets/fishing/rewards/reward-shell.png";
-  if (type === "energy") return "assets/resource-energy.png";
-  if (type === "plank") return "assets/resource-snow_planks.png";
-  if (type === "star") return "assets/resource-stars.png";
-  return "assets/resource-coins.png";
+  if (type === "fish") return "assets/surfing/reward-fish.png";
+  if (type === "shrimp") return "assets/surfing/reward-shrimp.png";
+  if (type === "shell") return "assets/surfing/reward-shell.png";
+  if (type === "energy") return "assets/surfing/reward-energy.png";
+  if (type === "plank") return "assets/surfing/reward-plank.png";
+  if (type === "star") return "assets/surfing/reward-star.png";
+  return "assets/surfing/reward-coins.png";
 }
 
 function freeCells() {

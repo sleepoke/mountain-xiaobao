@@ -1090,10 +1090,18 @@ p {
 
 .fishing-board {
   display: grid;
-  gap: 7px;
-  padding: 10px;
-  border-radius: 12px;
-  background: linear-gradient(180deg, #cfeeff, #effbff);
+  width: min(100%, 520px);
+  margin: 0 auto;
+  gap: clamp(4px, 1.35vw, 8px);
+  padding: clamp(10px, 3vw, 18px);
+  border: 5px solid rgba(99, 166, 207, 0.72);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(210, 239, 255, 0.76), rgba(151, 210, 238, 0.86)),
+    #cfeeff;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.76),
+    0 14px 28px rgba(21, 90, 124, 0.14);
 }
 
 .fishing-cell {
@@ -1113,6 +1121,7 @@ p {
   width: 100%;
   height: 100%;
   object-fit: contain;
+  filter: drop-shadow(0 4px 6px rgba(19, 32, 47, 0.1));
   pointer-events: none;
 }
 
@@ -1122,8 +1131,8 @@ p {
 
 .fishing-cell-reward {
   position: absolute;
-  width: 56%;
-  height: 56%;
+  width: 64%;
+  height: 64%;
   object-fit: contain;
   filter: drop-shadow(0 5px 6px rgba(19, 32, 47, 0.18));
   pointer-events: none;
@@ -1246,15 +1255,19 @@ p {
 }
 
 .surf-track {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  min-height: 430px;
-  padding: 10px;
-  border-radius: 14px;
-  background:
-    linear-gradient(90deg, transparent 0 31%, rgba(255, 255, 255, 0.56) 32% 34%, transparent 35% 65%, rgba(255, 255, 255, 0.56) 66% 68%, transparent 69%),
-    linear-gradient(180deg, #9fe1ff, #1b9aaa);
+  grid-template-rows: repeat(5, minmax(0, 1fr));
+  gap: 0;
+  width: min(100%, 430px);
+  aspect-ratio: 941 / 1672;
+  margin: 0 auto;
+  padding: 20% 12% 6%;
+  border: 0;
+  border-radius: 18px;
+  background: url("assets/surfing/surf-track-bg.png") center / cover no-repeat;
+  box-shadow: 0 18px 30px rgba(20, 84, 122, 0.18);
   overflow: hidden;
 }
 
@@ -1262,23 +1275,23 @@ p {
   position: relative;
   display: grid;
   place-items: center;
-  min-height: 74px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.1);
+  min-height: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 .surf-object {
-  width: 58px;
-  height: 58px;
+  width: clamp(52px, 12vw, 82px);
+  height: clamp(52px, 12vw, 82px);
   object-fit: contain;
-  filter: drop-shadow(0 7px 8px rgba(19, 32, 47, 0.2));
+  filter: drop-shadow(0 8px 8px rgba(19, 32, 47, 0.22));
 }
 
 .surf-player {
   position: absolute;
-  bottom: -5px;
-  width: 78px;
-  height: 78px;
+  bottom: 0;
+  width: clamp(82px, 18vw, 116px);
+  height: clamp(82px, 18vw, 116px);
   object-fit: contain;
   filter: drop-shadow(0 10px 10px rgba(19, 32, 47, 0.28));
 }
