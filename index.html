@@ -2,7 +2,7 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Mountain 小宝</title>
     <meta name="theme-color" content="#0b89a0" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -11,7 +11,7 @@
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="assets/penguin-01.png" />
     <link rel="apple-touch-icon" href="assets/penguin-01.png" />
-    <link rel="stylesheet" href="styles.css?v=20260520-build-map" />
+    <link rel="stylesheet" href="styles.css?v=20260520-minigames-economy" />
   </head>
   <body>
     <div class="app">
@@ -30,6 +30,8 @@
               <button id="storyBtn" type="button">剧情</button>
               <button id="tipBtn" type="button">小宝说</button>
               <button id="shopBtn" type="button">商店</button>
+              <button id="fishingBtn" type="button">冰湖钓鱼</button>
+              <button id="surfBtn" type="button">远海冲浪</button>
               <button id="buildBtn" type="button">冰山建设</button>
             </div>
           </div>
@@ -65,7 +67,6 @@
             <div class="actions">
               <button id="spawnBtn" class="primary" type="button">补给</button>
               <button id="tidyBtn" type="button">整理</button>
-              <button id="resetBtn" type="button" aria-label="重开">重开</button>
             </div>
           </div>
           <section class="order-strip" aria-label="会员订单">
@@ -187,6 +188,32 @@
       </section>
     </div>
 
+    <div id="fishingLayer" class="panel-layer" aria-hidden="true">
+      <section class="panel-box fishing-box" role="dialog" aria-modal="true" aria-labelledby="fishingTitle">
+        <div class="panel-heading">
+          <div>
+            <span class="panel-kicker">冰湖钓鱼</span>
+            <h2 id="fishingTitle">小宝探测冰湖</h2>
+          </div>
+          <button id="fishingCloseBtn" type="button" aria-label="关闭冰湖钓鱼">关闭</button>
+        </div>
+        <div id="fishingGame" class="fishing-game"></div>
+      </section>
+    </div>
+
+    <div id="surfLayer" class="panel-layer" aria-hidden="true">
+      <section class="panel-box surf-box" role="dialog" aria-modal="true" aria-labelledby="surfTitle">
+        <div class="panel-heading">
+          <div>
+            <span class="panel-kicker">远海冲浪</span>
+            <h2 id="surfTitle">小宝和花生的海面冒险</h2>
+          </div>
+          <button id="surfCloseBtn" type="button" aria-label="关闭远海冲浪">关闭</button>
+        </div>
+        <div id="surfGame" class="surf-game"></div>
+      </section>
+    </div>
+
     <div id="energyLayer" class="panel-layer" aria-hidden="true">
       <section class="panel-box energy-box" role="dialog" aria-modal="true" aria-labelledby="energyTitle">
         <div class="panel-heading">
@@ -204,7 +231,7 @@
       </section>
     </div>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <script src="game.js?v=20260520-build-map"></script>
+    <script src="game.js?v=20260520-minigames-economy"></script>
     <script>
       if ("serviceWorker" in navigator && location.protocol !== "file:") {
         window.addEventListener("load", () => {
