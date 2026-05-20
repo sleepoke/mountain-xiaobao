@@ -11,7 +11,7 @@
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="assets/penguin-01.png" />
     <link rel="apple-touch-icon" href="assets/penguin-01.png" />
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=20260519-mobile-orders" />
   </head>
   <body>
     <div class="app">
@@ -55,6 +55,13 @@
               <button id="resetBtn" type="button" aria-label="重开">重开</button>
             </div>
           </div>
+          <section class="order-strip" aria-label="会员订单">
+            <div class="order-strip-head">
+              <h3>会员订单</h3>
+              <button id="newOrdersBtn" type="button">换单</button>
+            </div>
+            <div id="orders" class="orders"></div>
+          </section>
           <div class="iceberg-wrap">
             <div id="board" class="board" role="grid" aria-label="企鹅健身房冰山合成棋盘"></div>
           </div>
@@ -69,14 +76,6 @@
         </section>
 
         <aside class="side-panel" aria-label="经营面板">
-          <section>
-            <div class="section-heading">
-              <h2>会员订单</h2>
-              <button id="newOrdersBtn" type="button">换单</button>
-            </div>
-            <div id="orders" class="orders"></div>
-          </section>
-
           <section>
             <div class="section-heading">
               <h2>鱼干图鉴</h2>
@@ -159,7 +158,7 @@
       </section>
     </div>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <script src="game.js"></script>
+    <script src="game.js?v=20260519-mobile-orders"></script>
     <script>
       if ("serviceWorker" in navigator && location.protocol !== "file:") {
         window.addEventListener("load", () => {

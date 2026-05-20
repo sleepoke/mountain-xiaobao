@@ -532,8 +532,9 @@ function renderOrders() {
     const ready = canFulfill(order);
     const needs = order.needs.map((tile) => {
       const has = boardHas(tile);
-      return `<span class="need ${has ? "done" : ""}">
-        <img src="${assetFor(tile)}" alt="" />${itemName(tile)}
+      return `<span class="need ${has ? "done" : ""}" title="${itemName(tile)}">
+        <img src="${assetFor(tile)}" alt="" />
+        <span class="need-level">${tile.level}</span>
       </span>`;
     }).join("");
 
@@ -543,7 +544,7 @@ function renderOrders() {
         <span class="order-reward">+${order.reward} 金币</span>
       </div>
       <div class="needs">${needs}</div>
-      <button class="fulfill ${ready ? "primary" : "not-ready"}" type="button" data-order="${orderIndex}" aria-disabled="${ready ? "false" : "true"}">交付</button>
+      <button class="fulfill ${ready ? "primary" : "not-ready"}" type="button" data-order="${orderIndex}" aria-disabled="${ready ? "false" : "true"}">${ready ? "交付" : "收集中"}</button>
     `;
     ordersEl.appendChild(orderEl);
   });
