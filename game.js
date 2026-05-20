@@ -387,6 +387,7 @@ const buildNodes = [
 
 let state = loadState();
 let selectedIndex = null;
+let inspectedBuildNodeId = null;
 let toastTimer = null;
 let moodTimer = null;
 let idleTimer = null;
@@ -817,6 +818,7 @@ function buyShopItem(id) {
 
 function openBuildMap() {
   markAction();
+  inspectedBuildNodeId = inspectedBuildNodeId || state.buildings.built[state.buildings.built.length - 1] || "base_shelf";
   buildLayerEl.classList.add("open");
   buildLayerEl.setAttribute("aria-hidden", "false");
   renderBuildMap();
@@ -833,7 +835,14 @@ function renderBuildMap() {
   buildLevelEl.textContent = state.level;
   buildProgressEl.textContent = `${builtCount}/${buildNodes.length}`;
   const nextNode = buildNodes.find((node) => !isBuildingBuilt(node.id));
-  const detailNode = nextNode || buildNodes[buildNodes.length - 1];
+  const inspectedNode = buildNodes.find((node) => node.id === inspectedBuildNodeId);
+  const detailNode = inspectedNode || nextNode || buildNodes[buildNodes.length - 1];
+  const detailBuilt = isBuildingBuilt(detailNode.id);
+  const detailUnlocked = state.level >= detailNode.unlockLevel;
+  const detailAffordable = state.coins >= detailNode.cost;
+  const detailTag = inspectedNode
+    ? detailBuilt ? "已建设地点" : detailUnlocked ? "可建设地点" : "未解锁地点"
+    : nextNode ? "下一处建设" : "全图已完成";
   const revealLayers = buildNodes
     .filter((node) => isBuildingBuilt(node.id))
     .map((node) => `
@@ -851,7 +860,7 @@ function renderBuildMap() {
     return `
       <button
         type="button"
-        class="map-node ${built ? "built" : unlocked ? "unlocked" : "locked"} ${unlocked && !built && affordable ? "ready" : ""}"
+        class="map-node ${built ? "built" : unlocked ? "unlocked" : "locked"} ${unlocked && !built && affordable ? "ready" : ""} ${detailNode.id === node.id ? "active" : ""}"
         style="left:${node.map.x}%; top:${node.map.y}%;"
         data-build-node="${node.id}"
         aria-label="${node.name}，${built ? "已完成" : unlocked ? "可建设" : `${node.unlockLevel}级解锁`}"
@@ -860,20 +869,33 @@ function renderBuildMap() {
       </button>
     `;
   }).join("");
+  const walkers = [
+    ["penguin-02.png", "route-a"],
+    ["penguin-03.png", "route-b"],
+    ["penguin-11.png", "route-c"],
+    ["penguin-13.png", "route-d"],
+  ].map(([image, route]) => `<img class="map-penguin ${route}" src="assets/${image}" alt="" />`).join("");
 
   buildMapEl.innerHTML = `
     <div class="map-stage" aria-label="Mountain 小宝冰山建设大地图">
       <img class="map-base" src="assets/map-empty.png" alt="未建设的冰山大地图" />
       ${revealLayers}
+      <div class="map-penguins" aria-hidden="true">${walkers}</div>
       ${markers}
     </div>
-    <aside class="map-detail">
-      <span class="build-tag">${nextNode ? "下一处建设" : "全图已完成"}</span>
-      <h3>${detailNode.name}</h3>
-      <p>${detailNode.desc}</p>
+    <aside class="map-detail ${detailBuilt ? "built" : detailUnlocked ? "unlocked" : "locked"}">
+      <span class="build-tag">${detailTag}</span>
+      <div class="map-detail-top">
+        <img src="assets/build-${detailNode.id}.png" alt="" />
+        <div>
+          <h3>${detailNode.name}</h3>
+          <p>${detailNode.desc}</p>
+        </div>
+      </div>
       <div class="map-detail-meta">
         <span>解锁等级 ${detailNode.unlockLevel}</span>
-        <span>${isBuildingBuilt(detailNode.id) ? "已完成" : `${detailNode.cost} 金币`}</span>
+        <span>${detailBuilt ? "已完成" : detailUnlocked ? `${detailNode.cost} 金币` : `还差 ${detailNode.unlockLevel - state.level} 级`}</span>
+        <span>${detailBuilt ? "点击地图节点可查看地点" : detailUnlocked && detailAffordable ? "点击节点开始建设" : detailUnlocked ? "金币不足" : "升级后解锁"}</span>
       </div>
     </aside>
   `;
@@ -881,15 +903,24 @@ function renderBuildMap() {
 
 function buildNode(id) {
   const node = buildNodes.find((entry) => entry.id === id);
-  if (!node || isBuildingBuilt(id)) return;
+  if (!node) return;
+  inspectedBuildNodeId = id;
+  if (isBuildingBuilt(id)) {
+    setHeroMood("proud", `${node.name} 已经建好了。小企鹅们正在这里忙来忙去呢。`);
+    showToast(`${node.name}：${node.desc}`);
+    renderBuildMap();
+    return;
+  }
   if (state.level < node.unlockLevel) {
     setHeroMood("confused", `这里需要 ${node.unlockLevel} 级才能解锁，我们慢慢来。`);
     showToast("等级不足。");
+    renderBuildMap();
     return;
   }
   if (state.coins < node.cost) {
     setHeroMood("cry", "金币好像不太够啦。我们可以完成订单来获得更多金币！");
     showToast("金币不足。");
+    renderBuildMap();
     return;
   }
 
