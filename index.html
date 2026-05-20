@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mountain 小宝</title>
+    <meta name="theme-color" content="#0b89a0" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Mountain 小宝" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="assets/penguin-01.png" />
+    <link rel="apple-touch-icon" href="assets/penguin-01.png" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <section class="hero-card" aria-label="企鹅主角">
+          <div class="hero-stage">
+            <div id="backpack" class="backpack" aria-hidden="true">
+              <span></span>
+            </div>
+            <img id="heroPenguin" class="hero-penguin" src="assets/penguin-01.png" alt="企鹅馆长" />
+          </div>
+          <div class="hero-copy">
+            <h1>Mountain 小宝</h1>
+            <p id="coachLine">馆长盯着棋盘，准备从背包里掏出今日补给。</p>
+            <div class="dialogue-actions">
+              <button id="storyBtn" type="button">剧情</button>
+              <button id="tipBtn" type="button">小宝说</button>
+              <button id="shopBtn" type="button">商店</button>
+              <button id="buildBtn" type="button">冰山建设</button>
+            </div>
+          </div>
+        </section>
+
+        <div class="stats" aria-label="玩家状态">
+          <div class="stat"><img src="assets/resource-coins.png" alt="" /><span>金币</span><strong id="coins">0</strong></div>
+          <div class="stat"><img src="assets/resource-energy.png" alt="" /><span>能量</span><strong id="energy">0</strong></div>
+          <div class="stat"><img src="assets/resource-stars.png" alt="" /><span>等级</span><strong id="level">1</strong></div>
+        </div>
+      </header>
+
+      <main class="game-shell">
+        <section class="board-panel" aria-label="冰山合成棋盘">
+          <div class="board-header">
+            <div>
+              <h2>冰山货架</h2>
+              <p id="boardHint">拖动或点选两个相同鱼干/虾干即可合成。</p>
+            </div>
+            <div class="actions">
+              <button id="spawnBtn" class="primary" type="button">补给</button>
+              <button id="tidyBtn" type="button">整理</button>
+              <button id="resetBtn" type="button" aria-label="重开">重开</button>
+            </div>
+          </div>
+          <div class="iceberg-wrap">
+            <div id="board" class="board" role="grid" aria-label="企鹅健身房冰山合成棋盘"></div>
+          </div>
+          <div class="board-info" aria-live="polite">
+            <button id="boardBackBtn" class="board-back" type="button" aria-label="返回">‹</button>
+            <div class="board-info-copy">
+              <strong id="selectedTileName">选择一个棋子</strong>
+              <p id="selectedTileDesc">点击棋盘上的鱼干或虾干，相同等级可以合成。</p>
+            </div>
+            <button id="sellBtn" class="sell-btn" type="button" disabled>出售</button>
+          </div>
+        </section>
+
+        <aside class="side-panel" aria-label="经营面板">
+          <section>
+            <div class="section-heading">
+              <h2>会员订单</h2>
+              <button id="newOrdersBtn" type="button">换单</button>
+            </div>
+            <div id="orders" class="orders"></div>
+          </section>
+
+          <section>
+            <div class="section-heading">
+              <h2>鱼干图鉴</h2>
+              <span id="fishCollectionCount">0/8</span>
+            </div>
+            <div id="fishCollection" class="collection"></div>
+          </section>
+
+          <section>
+            <div class="section-heading">
+              <h2>虾干图鉴</h2>
+              <span id="shrimpCollectionCount">0/8</span>
+            </div>
+            <div id="shrimpCollection" class="collection"></div>
+          </section>
+        </aside>
+      </main>
+    </div>
+
+    <div id="dialogueLayer" class="dialogue-layer" aria-hidden="true">
+      <section class="dialogue-box" role="dialog" aria-modal="true" aria-labelledby="dialogueTitle">
+        <div class="dialogue-portrait">
+          <img id="dialoguePenguin" src="assets/penguin-01.png" alt="小宝" />
+        </div>
+        <div class="dialogue-content">
+          <div class="dialogue-topline">小宝</div>
+          <h2 id="dialogueTitle">欢迎来到冰山</h2>
+          <p id="dialogueText"></p>
+          <div id="dialogueChoices" class="dialogue-choices"></div>
+          <div class="dialogue-controls">
+            <button id="dialogueSkipBtn" type="button">跳过</button>
+            <button id="dialogueNextBtn" class="primary" type="button">继续</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div id="shopLayer" class="panel-layer" aria-hidden="true">
+      <section class="panel-box shop-box" role="dialog" aria-modal="true" aria-labelledby="shopTitle">
+        <div class="panel-heading">
+          <div>
+            <span class="panel-kicker">小宝商店</span>
+            <h2 id="shopTitle">冰山补给站</h2>
+          </div>
+          <button id="shopCloseBtn" type="button" aria-label="关闭商店">关闭</button>
+        </div>
+        <div class="shop-tabs" role="tablist" aria-label="商店分类">
+          <button class="primary" type="button" data-shop-tab="rods">钓鱼竿</button>
+          <button type="button" data-shop-tab="boards">冲浪板</button>
+          <button type="button" data-shop-tab="supplies">物资</button>
+        </div>
+        <div id="shopItems" class="shop-items"></div>
+      </section>
+    </div>
+
+    <div id="buildLayer" class="panel-layer" aria-hidden="true">
+      <section class="panel-box build-box" role="dialog" aria-modal="true" aria-labelledby="buildTitle">
+        <div class="panel-heading">
+          <div>
+            <span class="panel-kicker">冰山建设</span>
+            <h2 id="buildTitle">Mountain 小宝地图</h2>
+          </div>
+          <button id="buildCloseBtn" type="button" aria-label="关闭建设地图">关闭</button>
+        </div>
+        <div class="build-summary">
+          <div>
+            <span>当前等级</span>
+            <strong id="buildLevel">1</strong>
+          </div>
+          <div>
+            <span>建设进度</span>
+            <strong id="buildProgress">0/0</strong>
+          </div>
+          <div>
+            <span>长期目标</span>
+            <strong>100级全图 / 1000级长线</strong>
+          </div>
+        </div>
+        <div id="buildMap" class="build-map"></div>
+      </section>
+    </div>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="game.js"></script>
+    <script>
+      if ("serviceWorker" in navigator && location.protocol !== "file:") {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("sw.js").catch((error) => {
+            console.warn("Service worker registration failed.", error);
+          });
+        });
+      }
+    </script>
+  </body>
+</html>

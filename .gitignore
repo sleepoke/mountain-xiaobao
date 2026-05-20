@@ -1,0 +1,8 @@
+.DS_Store
+Thumbs.db
+*.log
+node_modules/
+.netlify/
+Start Mountain Xiaobao.cmd
+Start Mountain Xiaobao.ps1
+assets/*-verified.png
