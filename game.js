@@ -2,6 +2,7 @@ const SIZE = 7;
 const MAX_ENERGY = 48;
 const REFRESH_ORDER_COST = 30;
 const SAVE_KEY = "penguin-gym-save-v3";
+const ASSET_VERSION = "20260520-fishing-surf-smooth";
 const TYPE_UNLOCK_LEVEL = { fish: 1, shrimp: 1, shell: 6, squid: 12 };
 const TYPE_LABELS = { fish: "小鱼干", shrimp: "小虾干", shell: "贝壳", squid: "鱿鱼" };
 const TYPE_ORDER = { fish: 0, shrimp: 1, shell: 2, squid: 3 };
@@ -22,6 +23,10 @@ function preloadImages(sources) {
 }
 
 preloadImages(mapWalkerAssets);
+
+function versionedAsset(path) {
+  return `${path}?v=${ASSET_VERSION}`;
+}
 
 const catalog = {
   fish: [
@@ -1124,7 +1129,7 @@ function renderFishingGame() {
   if (fishingState.status === "settlement") {
     fishingGameEl.innerHTML = `
       <section class="fishing-result">
-        <img src="assets/fishing/panels/panel-result.png" alt="" />
+        <img src="${versionedAsset("assets/fishing/panels/panel-result.png")}" alt="" />
         <h3>大丰收！</h3>
         <div class="fishing-rewards">${rewards}</div>
         <p>最大连击 ${fishingState.maxCombo}，剩余行动 ${Math.max(0, fishingState.actions)}。</p>
@@ -1140,9 +1145,9 @@ function renderFishingGame() {
   const cells = fishingState.cells.map((cell) => renderFishingCell(cell)).join("");
   fishingGameEl.innerHTML = `
     <div class="fishing-hud">
-      <span><img src="assets/fishing/buttons/hud-energy.png" alt="" />行动 ${Math.max(0, fishingState.actions)}</span>
-      <span><img src="assets/fishing/buttons/popup-seal-warning.png" alt="" />生命 ${Math.max(0, fishingState.lives)}</span>
-      <span><img src="assets/fishing/buttons/hud-combo.png" alt="" />连击 ${fishingState.combo}</span>
+      <span><img src="${versionedAsset("assets/fishing/buttons/hud-energy.png")}" alt="" />行动 ${Math.max(0, fishingState.actions)}</span>
+      <span><img src="${versionedAsset("assets/fishing/buttons/popup-seal-warning.png")}" alt="" />生命 ${Math.max(0, fishingState.lives)}</span>
+      <span><img src="${versionedAsset("assets/fishing/buttons/hud-combo.png")}" alt="" />连击 ${fishingState.combo}</span>
     </div>
     <div class="fishing-objective">
       ${Object.entries(FISHING_GOALS).map(([type, goal]) => `
@@ -1161,7 +1166,7 @@ function renderFishingGame() {
       ${renderFishingModeButton("mark", "标记", "btn-mark.png")}
       ${renderFishingModeButton("scan", `扫描 ${fishingState.scans}`, "btn-scan.png", fishingState.scans <= 0)}
       <button type="button" data-fishing-action="hint" ${fishingState.hints <= 0 ? "disabled" : ""}>
-        <img src="assets/fishing/buttons/btn-hint.png" alt="" />
+        <img src="${versionedAsset("assets/fishing/buttons/btn-hint.png")}" alt="" />
         <span>提示 ${fishingState.hints}</span>
       </button>
     </div>
@@ -1185,23 +1190,23 @@ function renderFishingCell(cell) {
 function renderFishingModeButton(mode, label, icon, disabled = false) {
   return `
     <button class="${fishingState.mode === mode ? "active" : ""}" type="button" data-fishing-mode="${mode}" ${disabled ? "disabled" : ""}>
-      <img src="assets/fishing/buttons/${icon}" alt="" />
+      <img src="${versionedAsset(`assets/fishing/buttons/${icon}`)}" alt="" />
       <span>${label}</span>
     </button>
   `;
 }
 
 function fishingTileImage(cell) {
-  if (cell.isMarked && !cell.isOpen) return "assets/fishing/tiles/tile-marked.png";
-  if (!cell.isOpen) return "assets/fishing/tiles/tile-closed.png";
-  if (cell.isSeal) return "assets/fishing/tiles/tile-seal.png";
-  return `assets/fishing/tiles/tile-open-${Math.min(3, cell.adjacentSealCount)}.png`;
+  if (cell.isMarked && !cell.isOpen) return versionedAsset("assets/fishing/tiles/tile-marked.png");
+  if (!cell.isOpen) return versionedAsset("assets/fishing/tiles/tile-closed.png");
+  if (cell.isSeal) return versionedAsset("assets/fishing/tiles/tile-seal.png");
+  return versionedAsset(`assets/fishing/tiles/tile-open-${Math.min(3, cell.adjacentSealCount)}.png`);
 }
 
 function fishingRewardAsset(type) {
-  if (["fish", "shrimp", "shell", "energy"].includes(type)) return `assets/fishing/rewards/reward-${type}.png`;
-  if (type === "gold") return "assets/resource-coins.png";
-  return "assets/fishing/rewards/reward-fish.png";
+  if (["fish", "shrimp", "shell", "energy"].includes(type)) return versionedAsset(`assets/fishing/rewards/reward-${type}.png`);
+  if (type === "gold") return versionedAsset("assets/resource-coins.png");
+  return versionedAsset("assets/fishing/rewards/reward-fish.png");
 }
 
 function handleFishingCell(index) {
@@ -1546,7 +1551,7 @@ function hitSurfObstacle(type, lane = surfState.lane, y = SURF_PLAYER_Y) {
     if (surfState.shield > 0) {
       surfState.shield -= 1;
       surfState.message = "护盾挡住了一次碰撞！";
-      addSurfEffect("shield", "护盾", lane, y, "assets/surfing/skill-shield.png");
+      addSurfEffect("shield", "护盾", lane, y, versionedAsset("assets/surfing/skill-shield.png"));
     } else {
       surfState.durability -= 1;
       const label = type === "seal" ? "海豹！" : type === "rock" ? "石头！" : type === "whirlpool" ? "漩涡！" : "撞到啦！";
@@ -1629,53 +1634,98 @@ function renderSurfGame() {
     return;
   }
   const stage = currentSurfStage();
-  const progressValue = Math.min(stage.duration, Math.floor(surfState.progress));
-  const laneGuides = [0, 1, 2]
-    .map((lane) => `<span class="surf-lane-guide" style="--lane-x:${surfLaneX(lane)}%;"></span>`)
-    .join("");
-  const objects = surfState.objects.map((object) => `
-    <img
-      class="surf-object ${object.kind} ${object.type}"
-      src="${surfObjectAsset(object)}"
-      alt=""
-      style="--lane-x:${surfLaneX(object.lane)}%; --object-y:${object.y}%; z-index:${10 + Math.round(object.y)};"
-    />
-  `).join("");
-  const effects = (surfState.effects || []).map((effect) => `
-    <span
-      class="surf-effect ${effect.kind}"
-      style="--lane-x:${surfLaneX(effect.lane)}%; --object-y:${effect.y}%;"
-    >
-      ${effect.icon ? `<img src="${effect.icon}" alt="" />` : ""}
-      <b>${effect.text}</b>
-    </span>
-  `).join("");
-  const playerHit = (surfState.effects || []).some((effect) => effect.kind === "hit" && effect.age < 4);
+  if (!surfGameEl.querySelector("[data-surf-run]")) {
+    renderSurfRunShell(stage);
+  }
+  updateSurfRunFrame(stage);
+}
+
+function renderSurfRunShell(stage) {
   surfGameEl.innerHTML = `
-    <div class="surf-hud">
-      <span>${stage.name}</span>
-      <span>进度 ${progressValue}/${stage.duration}</span>
-      <span>耐久 ${Math.max(0, surfState.durability)}</span>
-      <span>连击 ${surfState.combo}</span>
+    <div class="surf-hud" data-surf-run>
+      <span data-surf-stage-name>${stage.name}</span>
+      <span data-surf-progress></span>
+      <span data-surf-durability></span>
+      <span data-surf-combo></span>
     </div>
-    <div class="surf-message">${surfState.message}</div>
-    <div class="surf-track ${surfTimer ? "running" : "paused"}">
-      ${laneGuides}
-      ${objects}
-      ${effects}
-      <img
-        class="surf-player ${playerHit ? "hit" : ""}"
-        src="assets/surfing/char-penguin-surf.png"
-        alt=""
-        style="--lane-x:${surfLaneX(surfState.lane)}%;"
-      />
+    <div class="surf-message" data-surf-message></div>
+    <div class="surf-track">
+      ${[0, 1, 2].map((lane) => `<span class="surf-lane-guide" style="--lane-x:${surfLaneX(lane)}%;"></span>`).join("")}
+      <div class="surf-object-layer" aria-hidden="true"></div>
+      <div class="surf-effect-layer" aria-hidden="true"></div>
+      <img class="surf-player" src="${versionedAsset("assets/surfing/char-penguin-surf.png")}" alt="" />
     </div>
     <div class="surf-controls">
       <button type="button" data-surf-action="left">左</button>
-      <button class="primary" type="button" data-surf-action="pause">${surfTimer ? "暂停" : "继续"}</button>
+      <button class="primary" type="button" data-surf-action="pause"></button>
       <button type="button" data-surf-action="right">右</button>
     </div>
   `;
+}
+
+function updateSurfRunFrame(stage) {
+  const progressValue = Math.min(stage.duration, Math.floor(surfState.progress));
+  surfGameEl.querySelector("[data-surf-stage-name]").textContent = stage.name;
+  surfGameEl.querySelector("[data-surf-progress]").textContent = `进度 ${progressValue}/${stage.duration}`;
+  surfGameEl.querySelector("[data-surf-durability]").textContent = `耐久 ${Math.max(0, surfState.durability)}`;
+  surfGameEl.querySelector("[data-surf-combo]").textContent = `连击 ${surfState.combo}`;
+  surfGameEl.querySelector("[data-surf-message]").textContent = surfState.message;
+  surfGameEl.querySelector("[data-surf-action='pause']").textContent = surfTimer ? "暂停" : "继续";
+  const track = surfGameEl.querySelector(".surf-track");
+  track.classList.toggle("running", Boolean(surfTimer));
+  track.classList.toggle("paused", !surfTimer);
+  syncSurfObjects();
+  syncSurfEffects();
+  const playerHit = (surfState.effects || []).some((effect) => effect.kind === "hit" && effect.age < 4);
+  const player = surfGameEl.querySelector(".surf-player");
+  player.classList.toggle("hit", playerHit);
+  player.style.setProperty("--lane-x", `${surfLaneX(surfState.lane)}%`);
+}
+
+function syncSurfObjects() {
+  const layer = surfGameEl.querySelector(".surf-object-layer");
+  if (!layer) return;
+  const liveIds = new Set(surfState.objects.map((object) => object.id));
+  Array.from(layer.children).forEach((element) => {
+    if (!liveIds.has(element.dataset.surfObject)) element.remove();
+  });
+  surfState.objects.forEach((object) => {
+    let element = Array.from(layer.children).find((child) => child.dataset.surfObject === object.id);
+    if (!element) {
+      element = document.createElement("img");
+      element.dataset.surfObject = object.id;
+      element.alt = "";
+      element.src = surfObjectAsset(object);
+      layer.appendChild(element);
+    }
+    const nextClassName = `surf-object ${object.kind} ${object.type}`;
+    if (element.className !== nextClassName) element.className = nextClassName;
+    element.style.setProperty("--lane-x", `${surfLaneX(object.lane)}%`);
+    element.style.setProperty("--object-y", `${object.y}%`);
+    element.style.zIndex = String(10 + Math.round(object.y));
+  });
+}
+
+function syncSurfEffects() {
+  const layer = surfGameEl.querySelector(".surf-effect-layer");
+  if (!layer) return;
+  const liveIds = new Set((surfState.effects || []).map((effect) => effect.id));
+  Array.from(layer.children).forEach((element) => {
+    if (!liveIds.has(element.dataset.surfEffect)) element.remove();
+  });
+  (surfState.effects || []).forEach((effect) => {
+    let element = Array.from(layer.children).find((child) => child.dataset.surfEffect === effect.id);
+    if (!element) {
+      element = document.createElement("span");
+      element.dataset.surfEffect = effect.id;
+      element.className = `surf-effect ${effect.kind}`;
+      element.innerHTML = `${effect.icon ? `<img src="${effect.icon}" alt="" />` : ""}<b></b>`;
+      layer.appendChild(element);
+    }
+    element.style.setProperty("--lane-x", `${surfLaneX(effect.lane)}%`);
+    element.style.setProperty("--object-y", `${effect.y}%`);
+    element.querySelector("b").textContent = effect.text;
+  });
 }
 
 function renderSurfSelect() {
@@ -1692,14 +1742,14 @@ function renderSurfSelect() {
   }).join("");
   const boards = ownedBoards.map((board) => `
     <button class="surf-board-choice ${surfState.boardId === board.id ? "active" : ""}" type="button" data-surf-board="${board.id}">
-      <img src="assets/shop-${board.id}.png" alt="" />
+      <img src="${versionedAsset(`assets/shop-${board.id}.png`)}" alt="" />
       <span>${board.name}</span>
     </button>
   `).join("");
   surfGameEl.innerHTML = `
     <div class="surf-select">
       <div class="surf-hero">
-        <img src="assets/surfing/char-peanut-surf.png" alt="" />
+        <img src="${versionedAsset("assets/surfing/char-peanut-surf.png")}" alt="" />
         <div>
           <h3>花生在海边等你</h3>
           <p>左右滑动切换三条海路，收集目标奖励，避开海豹、浪花和漂流木。</p>
@@ -1719,7 +1769,7 @@ function renderSurfResult() {
     .join("") || "<span>这次主要练习了平衡感</span>";
   surfGameEl.innerHTML = `
     <section class="surf-result">
-      <img src="assets/surfing/char-peanut-cheer.png" alt="" />
+      <img src="${versionedAsset("assets/surfing/char-peanut-cheer.png")}" alt="" />
       <h3>Great Surf!</h3>
       <div class="surf-rewards">${rewards}</div>
       <p>最大连击 ${surfState.maxCombo}，${surfState.message}</p>
@@ -1739,23 +1789,23 @@ function surfTargetText(target) {
 
 function surfObjectAsset(object) {
   if (object.kind === "reward") return surfRewardAsset(object.type);
-  if (object.type === "seal") return "assets/surfing/obstacle-seal.png";
-  if (object.type === "wave") return "assets/surfing/obstacle-wave.png";
-  if (object.type === "driftwood") return "assets/surfing/obstacle-driftwood.png";
-  if (object.type === "rock") return "assets/surfing/obstacle-rock.png";
-  if (object.type === "whirlpool") return "assets/surfing/obstacle-whirlpool.png";
-  if (object.type === "iceberg") return "assets/surfing/obstacle-iceberg.png";
-  return "assets/surfing/obstacle-ice-floe.png";
+  if (object.type === "seal") return versionedAsset("assets/surfing/obstacle-seal.png");
+  if (object.type === "wave") return versionedAsset("assets/surfing/obstacle-wave.png");
+  if (object.type === "driftwood") return versionedAsset("assets/surfing/obstacle-driftwood.png");
+  if (object.type === "rock") return versionedAsset("assets/surfing/obstacle-rock.png");
+  if (object.type === "whirlpool") return versionedAsset("assets/surfing/obstacle-whirlpool.png");
+  if (object.type === "iceberg") return versionedAsset("assets/surfing/obstacle-iceberg.png");
+  return versionedAsset("assets/surfing/obstacle-ice-floe.png");
 }
 
 function surfRewardAsset(type) {
-  if (type === "fish") return "assets/surfing/reward-fish.png";
-  if (type === "shrimp") return "assets/surfing/reward-shrimp.png";
-  if (type === "shell") return "assets/surfing/reward-shell.png";
-  if (type === "energy") return "assets/surfing/reward-energy.png";
-  if (type === "plank") return "assets/surfing/reward-plank.png";
-  if (type === "star") return "assets/surfing/reward-star.png";
-  return "assets/surfing/reward-coins.png";
+  if (type === "fish") return versionedAsset("assets/surfing/reward-fish.png");
+  if (type === "shrimp") return versionedAsset("assets/surfing/reward-shrimp.png");
+  if (type === "shell") return versionedAsset("assets/surfing/reward-shell.png");
+  if (type === "energy") return versionedAsset("assets/surfing/reward-energy.png");
+  if (type === "plank") return versionedAsset("assets/surfing/reward-plank.png");
+  if (type === "star") return versionedAsset("assets/surfing/reward-star.png");
+  return versionedAsset("assets/surfing/reward-coins.png");
 }
 
 function freeCells() {

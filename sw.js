@@ -1,9 +1,9 @@
-const CACHE_NAME = "mountain-xiaobao-v8-surf-fishing-fix";
+const CACHE_NAME = "mountain-xiaobao-v9-fishing-surf-smooth";
 const CORE_ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=20260520-surf-fishing-fix",
-  "./game.js?v=20260520-surf-fishing-fix",
+  "./styles.css?v=20260520-fishing-surf-smooth",
+  "./game.js?v=20260520-fishing-surf-smooth",
   "./manifest.webmanifest",
   "./assets/penguin-01.png",
   "./assets/walkers/penguin-walk-east.png",

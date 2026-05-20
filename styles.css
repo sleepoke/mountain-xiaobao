@@ -1263,7 +1263,7 @@ p {
   padding: 0;
   border: 0;
   border-radius: 18px;
-  background: url("assets/surfing/surf-track-bg.png") center / cover no-repeat;
+  background: url("assets/surfing/surf-track-bg.png?v=20260520-fishing-surf-smooth") center / cover no-repeat;
   box-shadow: 0 18px 30px rgba(20, 84, 122, 0.18);
   overflow: hidden;
   touch-action: none;
@@ -1297,6 +1297,17 @@ p {
   transform: translateX(-50%);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
   pointer-events: none;
+}
+
+.surf-object-layer,
+.surf-effect-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.surf-effect-layer {
+  z-index: 170;
 }
 
 .surf-object {
