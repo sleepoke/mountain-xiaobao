@@ -1,11 +1,12 @@
-const CACHE_NAME = "mountain-xiaobao-v9-fishing-surf-smooth";
+const CACHE_NAME = "mountain-xiaobao-v10-easter-order-cost";
 const CORE_ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=20260520-fishing-surf-smooth",
-  "./game.js?v=20260520-fishing-surf-smooth",
+  "./styles.css?v=20260520-easter-order-cost",
+  "./game.js?v=20260520-easter-order-cost",
   "./manifest.webmanifest",
   "./assets/penguin-01.png",
+  "./assets/penguin-08.png",
   "./assets/walkers/penguin-walk-east.png",
   "./assets/walkers/penguin-walk-south.png",
   "./assets/walkers/penguin-walk-west.png",

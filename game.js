@@ -1,8 +1,11 @@
 const SIZE = 7;
 const MAX_ENERGY = 48;
-const REFRESH_ORDER_COST = 30;
+const REFRESH_ORDER_BASE_COST = 30;
+const REFRESH_ORDER_COST_STEP = 20;
+const HERO_EASTER_TAPS = 20;
+const HERO_EASTER_TAP_WINDOW = 1600;
 const SAVE_KEY = "penguin-gym-save-v3";
-const ASSET_VERSION = "20260520-fishing-surf-smooth";
+const ASSET_VERSION = "20260520-easter-order-cost";
 const TYPE_UNLOCK_LEVEL = { fish: 1, shrimp: 1, shell: 6, squid: 12 };
 const TYPE_LABELS = { fish: "小鱼干", shrimp: "小虾干", shell: "贝壳", squid: "鱿鱼" };
 const TYPE_ORDER = { fish: 0, shrimp: 1, shell: 2, squid: 3 };
@@ -451,6 +454,8 @@ let surfTimer = null;
 let toastTimer = null;
 let moodTimer = null;
 let idleTimer = null;
+let heroTapStreak = 0;
+let lastHeroTapAt = 0;
 let dialogueState = null;
 
 const boardEl = document.querySelector("#board");
@@ -535,6 +540,7 @@ function defaultState() {
     energy: 34,
     level: 1,
     xp: 0,
+    orderRefreshes: 0,
     discovered: { fish: [1, 2], shrimp: [1, 2], shell: [], squid: [] },
     orders: buildOrders(1, board),
     lastEnergyAt: Date.now(),
@@ -566,6 +572,7 @@ function loadState() {
     const saved = JSON.parse(localStorage.getItem(SAVE_KEY));
     if (saved && Array.isArray(saved.board) && saved.board.length === SIZE * SIZE) {
       saved.lastEnergyAt = saved.lastEnergyAt || Date.now();
+      saved.orderRefreshes = Number.isFinite(saved.orderRefreshes) ? saved.orderRefreshes : 0;
       saved.discovered = normalizeDiscovered(saved.discovered);
       saved.orders = Array.isArray(saved.orders) && saved.orders.length ? saved.orders : buildOrders(saved.level || 1, saved.board);
       saved.story = normalizeStory(saved.story);
@@ -657,6 +664,10 @@ function sameTile(a, b) {
   return a && b && a.type === b.type && a.level === b.level;
 }
 
+function currentOrderRefreshCost() {
+  return REFRESH_ORDER_BASE_COST + Math.max(0, state.orderRefreshes || 0) * REFRESH_ORDER_COST_STEP;
+}
+
 function render() {
   coinsEl.textContent = state.coins;
   energyEl.textContent = `${state.energy}/${MAX_ENERGY}`;
@@ -665,8 +676,9 @@ function render() {
   xpFillEl.style.width = `${Math.round(xpRatio * 100)}%`;
   xpTextEl.textContent = `${Math.round(xpRatio * 100)}%`;
   spawnBtn.disabled = state.energy <= 0 || freeCells().length === 0;
-  newOrdersBtn.disabled = state.coins < REFRESH_ORDER_COST;
-  newOrdersBtn.textContent = `换单 ${REFRESH_ORDER_COST}`;
+  const refreshCost = currentOrderRefreshCost();
+  newOrdersBtn.disabled = state.coins < refreshCost;
+  newOrdersBtn.textContent = `换单 ${refreshCost}`;
 
   boardEl.innerHTML = "";
   state.board.forEach((tile, index) => {
@@ -1831,12 +1843,16 @@ function addDiscovered(tile) {
 
 function addXp(amount) {
   state.xp += amount;
-  const needed = xpNeeded();
-  if (state.xp >= needed) {
-    state.xp -= needed;
+  let leveledUp = false;
+  while (state.level < 1000 && state.xp >= xpNeeded()) {
+    state.xp -= xpNeeded();
     state.level = Math.min(1000, state.level + 1);
+    leveledUp = true;
+  }
+  if (leveledUp) {
+    state.orderRefreshes = 0;
     state.energy = Math.min(MAX_ENERGY, state.energy + 10);
-    showToast(`Mountain 小宝升到 ${state.level} 级，能量补充了！`);
+    showToast(`Mountain 小宝升到 ${state.level} 级，换单价格回落啦！`);
   }
 }
 
@@ -2141,16 +2157,18 @@ function orderXp(order) {
 
 function refreshOrders() {
   markAction();
-  if (state.coins < REFRESH_ORDER_COST) {
+  const refreshCost = currentOrderRefreshCost();
+  if (state.coins < refreshCost) {
     setHeroMood("cry", randomOf(dialogueBank.notEnoughCoins));
-    return showToast(`换单需要 ${REFRESH_ORDER_COST} 金币。`);
+    return showToast(`换单需要 ${refreshCost} 金币。`);
   }
-  state.coins -= REFRESH_ORDER_COST;
+  state.coins -= refreshCost;
+  state.orderRefreshes = Math.max(0, state.orderRefreshes || 0) + 1;
   state.orders = state.orders.map((order, index) => {
     const target = Math.max(2, orderDifficulty(order) + Math.floor(Math.random() * 3) - 1);
     return buildOrder(state.level + index, state.board, target);
   });
-  setHeroMood("wink", `${randomOf(dialogueBank.refreshOrders)} 换单消耗 ${REFRESH_ORDER_COST} 金币。`);
+  setHeroMood("wink", `${randomOf(dialogueBank.refreshOrders)} 换单消耗 ${refreshCost} 金币，下次需要 ${currentOrderRefreshCost()} 金币。`);
   render();
 }
 
@@ -2410,6 +2428,24 @@ function markAction() {
   }, 30000);
 }
 
+function handleHeroTap() {
+  markAction();
+  const now = Date.now();
+  heroTapStreak = now - lastHeroTapAt <= HERO_EASTER_TAP_WINDOW ? heroTapStreak + 1 : 1;
+  lastHeroTapAt = now;
+  state.story.penguinClicks += 1;
+  if (heroTapStreak >= HERO_EASTER_TAPS) {
+    heroTapStreak = 0;
+    setHeroMood("love", "520快乐，爱你呦");
+    showToast("5.20 彩蛋触发！");
+    saveState();
+    return;
+  }
+  const many = state.story.penguinClicks >= 4;
+  setHeroMood(many ? "shock" : "confused", randomOf(many ? dialogueBank.penguinTapMany : dialogueBank.penguinTap));
+  saveState();
+}
+
 boardEl.addEventListener("click", (event) => {
   if (Date.now() < suppressBoardClickUntil) return;
   const cell = event.target.closest(".cell");
@@ -2465,13 +2501,7 @@ ordersEl.addEventListener("click", (event) => {
   fulfillOrder(Number(button.dataset.order));
 });
 
-heroPenguinEl.addEventListener("click", () => {
-  markAction();
-  state.story.penguinClicks += 1;
-  const many = state.story.penguinClicks >= 4;
-  setHeroMood(many ? "shock" : "confused", randomOf(many ? dialogueBank.penguinTapMany : dialogueBank.penguinTap));
-  saveState();
-});
+heroPenguinEl.addEventListener("click", handleHeroTap);
 
 spawnBtn.addEventListener("click", spawnItem);
 tidyBtn.addEventListener("click", tidyBoard);
