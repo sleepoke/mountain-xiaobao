@@ -1404,19 +1404,19 @@ p {
 }
 
 .map-penguin.route-a {
-  animation: penguin-walk-a 18s linear infinite, penguin-steps 0.72s steps(4) infinite;
+  animation: penguin-walk-a 18s linear infinite, penguin-steps 0.72s linear infinite;
 }
 
 .map-penguin.route-b {
-  animation: penguin-walk-b 22s linear infinite -5s, penguin-steps 0.76s steps(4) infinite;
+  animation: penguin-walk-b 22s linear infinite -5s, penguin-steps 0.76s linear infinite;
 }
 
 .map-penguin.route-c {
-  animation: penguin-walk-c 24s linear infinite -10s, penguin-steps 0.8s steps(4) infinite;
+  animation: penguin-walk-c 24s linear infinite -10s, penguin-steps 0.8s linear infinite;
 }
 
 .map-penguin.route-d {
-  animation: penguin-walk-d 20s linear infinite -3s, penguin-steps 0.78s steps(4) infinite;
+  animation: penguin-walk-d 20s linear infinite -3s, penguin-steps 0.78s linear infinite;
 }
 
 .map-node {
@@ -1706,11 +1706,17 @@ p {
 }
 
 @keyframes penguin-steps {
-  from {
-    background-position: 0 0;
+  0%, 24.999% {
+    background-position: 0% 0;
   }
-  to {
-    background-position: -400% 0;
+  25%, 49.999% {
+    background-position: 33.333333% 0;
+  }
+  50%, 74.999% {
+    background-position: 66.666667% 0;
+  }
+  75%, 100% {
+    background-position: 100% 0;
   }
 }
 

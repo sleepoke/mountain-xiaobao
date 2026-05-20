@@ -1,11 +1,15 @@
-const CACHE_NAME = "mountain-xiaobao-v6-minigames-assets";
+const CACHE_NAME = "mountain-xiaobao-v7-walker-fix";
 const CORE_ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=20260520-minigames-assets",
-  "./game.js?v=20260520-minigames-assets",
+  "./styles.css?v=20260520-walker-fix",
+  "./game.js?v=20260520-walker-fix",
   "./manifest.webmanifest",
   "./assets/penguin-01.png",
+  "./assets/walkers/penguin-walk-east.png",
+  "./assets/walkers/penguin-walk-south.png",
+  "./assets/walkers/penguin-walk-west.png",
+  "./assets/walkers/penguin-walk-north.png",
   "./assets/resource-coins.png",
   "./assets/resource-energy.png",
   "./assets/resource-stars.png"

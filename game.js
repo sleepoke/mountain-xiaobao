@@ -5,6 +5,23 @@ const SAVE_KEY = "penguin-gym-save-v3";
 const TYPE_UNLOCK_LEVEL = { fish: 1, shrimp: 1, shell: 6, squid: 12 };
 const TYPE_LABELS = { fish: "小鱼干", shrimp: "小虾干", shell: "贝壳", squid: "鱿鱼" };
 const TYPE_ORDER = { fish: 0, shrimp: 1, shell: 2, squid: 3 };
+const mapWalkerAssets = [
+  "assets/walkers/penguin-walk-east.png",
+  "assets/walkers/penguin-walk-south.png",
+  "assets/walkers/penguin-walk-west.png",
+  "assets/walkers/penguin-walk-north.png",
+];
+
+function preloadImages(sources) {
+  if (typeof Image === "undefined") return;
+  sources.forEach((src) => {
+    const image = new Image();
+    image.decoding = "async";
+    image.src = src;
+  });
+}
+
+preloadImages(mapWalkerAssets);
 
 const catalog = {
   fish: [
