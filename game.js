@@ -1,11 +1,14 @@
 const SIZE = 7;
+const BACKPACK_INDEX = SIZE * SIZE - 1;
+const BACKPACK_BASE_CAPACITY = 5;
+const BACKPACK_MAX_CAPACITY = 30;
 const MAX_ENERGY = 48;
 const REFRESH_ORDER_BASE_COST = 30;
 const REFRESH_ORDER_COST_STEP = 20;
 const HERO_EASTER_TAPS = 20;
 const HERO_EASTER_TAP_WINDOW = 1600;
 const SAVE_KEY = "penguin-gym-save-v3";
-const ASSET_VERSION = "20260520-easter-order-cost";
+const ASSET_VERSION = "20260520-backpack-buildings";
 const TYPE_UNLOCK_LEVEL = { fish: 1, shrimp: 1, shell: 6, squid: 12 };
 const TYPE_LABELS = { fish: "小鱼干", shrimp: "小虾干", shell: "贝壳", squid: "鱿鱼" };
 const TYPE_ORDER = { fish: 0, shrimp: 1, shell: 2, squid: 3 };
@@ -129,6 +132,18 @@ const surfingStages = [
   { id: "shore", name: "近岸练习", target: { fish: 5 }, duration: 26, unlockLevel: 1, recommendedBoard: "wood_board" },
   { id: "shell_shallows", name: "贝壳浅滩", target: { shell: 3, coins: 10 }, duration: 32, unlockLevel: 4, recommendedBoard: "shell_board" },
   { id: "shrimp_drift", name: "虾虾漂流带", target: { shrimp: 5 }, duration: 34, unlockLevel: 8, recommendedBoard: "star_board" },
+];
+const surfEncounterInfo = [
+  { kind: "reward", type: "fish", title: "蓝鱼", text: "获得小鱼素材" },
+  { kind: "reward", type: "shrimp", title: "小虾", text: "获得小虾素材" },
+  { kind: "reward", type: "shell", title: "贝壳", text: "获得贝壳素材" },
+  { kind: "reward", type: "coins", title: "金币", text: "直接加入金币" },
+  { kind: "reward", type: "energy", title: "能量", text: "补回能量" },
+  { kind: "obstacle", type: "rock", title: "石头", text: "碰撞耐久 -1" },
+  { kind: "obstacle", type: "seal", title: "海豹", text: "碰撞耐久 -1" },
+  { kind: "obstacle", type: "wave", title: "浪花", text: "被推到邻近赛道" },
+  { kind: "obstacle", type: "whirlpool", title: "漩涡", text: "碰撞耐久 -1" },
+  { kind: "obstacle", type: "driftwood", title: "漂流木", text: "碰撞耐久 -1" },
 ];
 
 const moodImages = {
@@ -442,6 +457,22 @@ const buildNodes = [
   { id: "star_observatory", name: "星光观景台", desc: "能看到整座冰山最闪亮的样子。", unlockLevel: 93, cost: 17600, map: { x: 18, y: 9, w: 17, h: 17 } },
   { id: "summit", name: "Mountain 小宝峰顶", desc: "100级全图目标，未来会继续扩展到1000级长线。", unlockLevel: 100, cost: 24000, map: { x: 55, y: 8, w: 17, h: 19 } },
 ];
+const buildFunctions = {
+  base_shelf: { title: "基础收纳", effect: "开启棋盘背包，初始 5 格。", action: "backpack", actionLabel: "打开背包" },
+  fish_storage: { title: "鱼干仓储", effect: "背包容量 +5，并提高钓鱼小鱼出现率。", action: "backpack", actionLabel: "整理背包" },
+  shrimp_kitchen: { title: "订单料理", effect: "虾类订单奖励更适合中后期扩展。", action: "orders", actionLabel: "查看订单" },
+  ice_bridge: { title: "道路连通", effect: "后续会开放跨区域委托和地图快捷移动。", action: "build", actionLabel: "查看地图" },
+  snow_slope: { title: "运输滑道", effect: "后续用于快速搬运建设材料。", action: "build", actionLabel: "查看地图" },
+  dock: { title: "远海入口", effect: "背包容量 +5，并开放更多冲浪板路线。", action: "surf", actionLabel: "去冲浪" },
+  ice_lake: { title: "冰湖探测", effect: "钓鱼奖励升级，可能带回更多素材。", action: "fishing", actionLabel: "去钓鱼" },
+  lighthouse: { title: "灯塔指引", effect: "背包容量 +5，未来提升远海探索收益。", action: "surf", actionLabel: "远海冲浪" },
+  night_bay: { title: "稀有海域", effect: "未来产出稀有贝壳与夜光材料。", action: "fishing", actionLabel: "探测海湾" },
+  festival_square: { title: "活动中心", effect: "未来承接节日活动和限时订单。", action: "orders", actionLabel: "查看订单" },
+  lobster_diner: { title: "高阶订单", effect: "未来提高高阶订单和龙虾主题收益。", action: "orders", actionLabel: "查看订单" },
+  aurora_port: { title: "极光远航", effect: "背包容量 +5，未来进入极光港探索。", action: "surf", actionLabel: "远海冲浪" },
+  star_observatory: { title: "星光导航", effect: "未来解锁星星任务和隐藏路线。", action: "build", actionLabel: "查看地图" },
+  summit: { title: "峰顶目标", effect: "背包容量 +5，作为 100 级阶段性里程碑。", action: "build", actionLabel: "查看地图" },
+};
 
 let state = loadState();
 let selectedIndex = null;
@@ -495,6 +526,10 @@ const shopLayerEl = document.querySelector("#shopLayer");
 const shopItemsEl = document.querySelector("#shopItems");
 const shopCloseBtn = document.querySelector("#shopCloseBtn");
 const shopTabButtons = document.querySelectorAll("[data-shop-tab]");
+const backpackLayerEl = document.querySelector("#backpackLayer");
+const backpackCloseBtn = document.querySelector("#backpackCloseBtn");
+const backpackSlotsEl = document.querySelector("#backpackSlots");
+const backpackCapacityTextEl = document.querySelector("#backpackCapacityText");
 const buildLayerEl = document.querySelector("#buildLayer");
 const buildMapEl = document.querySelector("#buildMap");
 const buildLevelEl = document.querySelector("#buildLevel");
@@ -541,6 +576,7 @@ function defaultState() {
     level: 1,
     xp: 0,
     orderRefreshes: 0,
+    backpack: { items: [] },
     discovered: { fish: [1, 2], shrimp: [1, 2], shell: [], squid: [] },
     orders: buildOrders(1, board),
     lastEnergyAt: Date.now(),
@@ -573,11 +609,13 @@ function loadState() {
     if (saved && Array.isArray(saved.board) && saved.board.length === SIZE * SIZE) {
       saved.lastEnergyAt = saved.lastEnergyAt || Date.now();
       saved.orderRefreshes = Number.isFinite(saved.orderRefreshes) ? saved.orderRefreshes : 0;
+      saved.backpack = normalizeBackpack(saved.backpack);
       saved.discovered = normalizeDiscovered(saved.discovered);
       saved.orders = Array.isArray(saved.orders) && saved.orders.length ? saved.orders : buildOrders(saved.level || 1, saved.board);
       saved.story = normalizeStory(saved.story);
       saved.shop = normalizeShop(saved.shop);
       saved.buildings = normalizeBuildings(saved.buildings);
+      reserveBackpackCell(saved);
       return saved;
     }
   } catch (error) {
@@ -601,6 +639,30 @@ function normalizeBuildings(buildings) {
   return {
     built: built.includes("base_shelf") ? built : ["base_shelf", ...built],
   };
+}
+
+function normalizeBackpack(backpack) {
+  const items = Array.isArray(backpack?.items)
+    ? backpack.items
+        .filter((tile) => tile && catalog[tile.type] && Number.isFinite(tile.level))
+        .map((tile) => ({ type: tile.type, level: Math.max(1, Math.min(maxLevelFor(tile.type), Number(tile.level))) }))
+        .slice(0, BACKPACK_MAX_CAPACITY)
+    : [];
+  return { items };
+}
+
+function reserveBackpackCell(targetState = state) {
+  targetState.backpack = normalizeBackpack(targetState.backpack);
+  const tile = targetState.board?.[BACKPACK_INDEX];
+  targetState.board[BACKPACK_INDEX] = null;
+  if (!tile) return;
+  if (targetState.backpack.items.length < backpackCapacityFor(targetState)) {
+    targetState.backpack.items.push(tile);
+    return;
+  }
+  const slot = targetState.board.findIndex((entry, index) => index !== BACKPACK_INDEX && entry === null);
+  if (slot >= 0) targetState.board[slot] = tile;
+  else if (targetState.backpack.items.length < BACKPACK_MAX_CAPACITY) targetState.backpack.items.push(tile);
 }
 
 function normalizeDiscovered(discovered) {
@@ -668,7 +730,27 @@ function currentOrderRefreshCost() {
   return REFRESH_ORDER_BASE_COST + Math.max(0, state.orderRefreshes || 0) * REFRESH_ORDER_COST_STEP;
 }
 
+function backpackCapacityFor(targetState = state) {
+  let capacity = BACKPACK_BASE_CAPACITY;
+  const owned = Array.isArray(targetState.shop?.owned) ? targetState.shop.owned : [];
+  const built = Array.isArray(targetState.buildings?.built) ? targetState.buildings.built : [];
+  if (owned.includes("xiaobao_backpack")) capacity += 5;
+  ["fish_storage", "dock", "lighthouse", "aurora_port", "summit"].forEach((id) => {
+    if (built.includes(id)) capacity += 5;
+  });
+  return Math.min(BACKPACK_MAX_CAPACITY, capacity);
+}
+
+function backpackCapacity() {
+  return backpackCapacityFor(state);
+}
+
+function backpackCount() {
+  return state.backpack.items.length;
+}
+
 function render() {
+  reserveBackpackCell();
   coinsEl.textContent = state.coins;
   energyEl.textContent = `${state.energy}/${MAX_ENERGY}`;
   levelEl.textContent = `${state.level}`;
@@ -683,14 +765,27 @@ function render() {
   boardEl.innerHTML = "";
   state.board.forEach((tile, index) => {
     const cell = document.createElement("button");
-    cell.className = "cell";
+    cell.className = index === BACKPACK_INDEX ? "cell backpack-cell" : "cell";
     cell.type = "button";
     cell.dataset.index = index;
     cell.setAttribute("role", "gridcell");
-    cell.setAttribute("aria-label", tile ? `${itemName(tile)}，等级 ${tile.level}` : "空冰块");
+    if (index === BACKPACK_INDEX) {
+      cell.setAttribute("aria-label", `小宝背包，${backpackCount()}/${backpackCapacity()}`);
+    } else {
+      cell.setAttribute("aria-label", tile ? `${itemName(tile)}，等级 ${tile.level}` : "空冰块");
+    }
     if (selectedIndex === index) cell.classList.add("selected");
 
-    if (tile) {
+    if (index === BACKPACK_INDEX) {
+      cell.innerHTML = `
+        <div class="board-backpack" aria-hidden="true">
+          <span class="board-backpack-handle"></span>
+          <span class="board-backpack-pocket"></span>
+        </div>
+        <strong>背包</strong>
+        <em>${backpackCount()}/${backpackCapacity()}</em>
+      `;
+    } else if (tile) {
       cell.innerHTML = `
         <div class="tile ${tile.type}" draggable="true" data-index="${index}">
           <img src="${assetFor(tile)}" alt="" />
@@ -828,6 +923,75 @@ function closeShop() {
   setHeroMood("wink", "谢谢光临小宝商店！下次回来时，说不定会有新商品哦！");
 }
 
+function openBackpackWindow() {
+  markAction();
+  backpackLayerEl.classList.add("open");
+  backpackLayerEl.setAttribute("aria-hidden", "false");
+  renderBackpackWindow();
+  setHeroMood("proud", "这里是小宝背包。暂时先从 5 格开始，之后会慢慢扩到 30 格。");
+}
+
+function closeBackpackWindow() {
+  backpackLayerEl.classList.remove("open");
+  backpackLayerEl.setAttribute("aria-hidden", "true");
+}
+
+function renderBackpackWindow() {
+  const capacity = backpackCapacity();
+  const items = state.backpack.items.slice(0, capacity);
+  backpackCapacityTextEl.textContent = `${items.length}/${capacity}`;
+  backpackSlotsEl.innerHTML = Array.from({ length: capacity }, (_, index) => {
+    const tile = items[index];
+    return `
+      <button class="backpack-slot ${tile ? "filled" : ""}" type="button" data-backpack-slot="${index}">
+        ${tile ? `<img src="${assetFor(tile)}" alt="" /><strong>${itemName(tile)}</strong><span>${tile.level}级</span>` : `<span>空格</span>`}
+      </button>
+    `;
+  }).join("");
+}
+
+function storeTileInBackpack(index) {
+  if (index === BACKPACK_INDEX) return false;
+  const tile = state.board[index];
+  if (!tile) {
+    openBackpackWindow();
+    return false;
+  }
+  const capacity = backpackCapacity();
+  if (state.backpack.items.length >= capacity) {
+    setHeroMood("cry", "背包格子满啦。先取出一点，或者继续建设冰山扩容吧。");
+    showToast(`背包已满：${state.backpack.items.length}/${capacity}`);
+    return false;
+  }
+  state.backpack.items.push(tile);
+  state.board[index] = null;
+  selectedIndex = null;
+  setHeroMood("proud", `${itemName(tile)} 已经放进小宝背包。`);
+  showToast(`收纳 ${itemName(tile)}。`);
+  render();
+  if (backpackLayerEl.classList.contains("open")) renderBackpackWindow();
+  saveState();
+  return true;
+}
+
+function withdrawBackpackItem(slot) {
+  const tile = state.backpack.items[slot];
+  if (!tile) return;
+  const emptyIndex = freeCells()[0];
+  if (emptyIndex === undefined) {
+    setHeroMood("shock", "棋盘没有空冰格啦，先合成或整理一下再取出。");
+    showToast("棋盘已满。");
+    return;
+  }
+  state.board[emptyIndex] = tile;
+  state.backpack.items.splice(slot, 1);
+  selectedIndex = emptyIndex;
+  setHeroMood("wink", `${itemName(tile)} 取回棋盘啦。`);
+  render();
+  renderBackpackWindow();
+  saveState();
+}
+
 function renderShop() {
   const category = shopCategories[state.shop.activeTab];
 shopTabButtons.forEach((button) => {
@@ -926,6 +1090,32 @@ function closeBuildMap() {
   buildLayerEl.setAttribute("aria-hidden", "true");
 }
 
+function runBuildAction(action) {
+  if (action === "backpack") {
+    closeBuildMap();
+    openBackpackWindow();
+    return;
+  }
+  if (action === "fishing") {
+    closeBuildMap();
+    openFishingGame();
+    return;
+  }
+  if (action === "surf") {
+    closeBuildMap();
+    openSurfGame();
+    return;
+  }
+  if (action === "orders") {
+    closeBuildMap();
+    document.querySelector(".order-strip")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setHeroMood("proud", "这里会逐步接入建筑加成订单，先从现有会员订单开始经营。");
+    showToast("已回到会员订单。");
+    return;
+  }
+  setHeroMood("wink", "这个建筑的完整玩法正在建设中，先把地图进度稳稳推进。");
+}
+
 function renderBuildMap() {
   const builtCount = state.buildings.built.length;
   buildLevelEl.textContent = state.level;
@@ -936,6 +1126,10 @@ function renderBuildMap() {
   const detailBuilt = isBuildingBuilt(detailNode.id);
   const detailUnlocked = state.level >= detailNode.unlockLevel;
   const detailAffordable = state.coins >= detailNode.cost;
+  const functionInfo = buildFunctions[detailNode.id] || { title: "建设功能", effect: "功能会随着后续版本继续扩展。" };
+  const functionAction = detailBuilt && functionInfo.action
+    ? `<button class="map-function-action" type="button" data-build-action="${functionInfo.action}">${functionInfo.actionLabel}</button>`
+    : "";
   const detailTag = inspectedNode
     ? detailBuilt ? "已建设地点" : detailUnlocked ? "可建设地点" : "未解锁地点"
     : nextNode ? "下一处建设" : "全图已完成";
@@ -992,6 +1186,11 @@ function renderBuildMap() {
         <span>解锁等级 ${detailNode.unlockLevel}</span>
         <span>${detailBuilt ? "已完成" : detailUnlocked ? `${detailNode.cost} 金币` : `还差 ${detailNode.unlockLevel - state.level} 级`}</span>
         <span>${detailBuilt ? "点击地图节点可查看地点" : detailUnlocked && detailAffordable ? "点击节点开始建设" : detailUnlocked ? "金币不足" : "升级后解锁"}</span>
+      </div>
+      <div class="map-function">
+        <strong>${functionInfo.title}</strong>
+        <p>${functionInfo.effect}</p>
+        ${functionAction}
       </div>
     </aside>
   `;
@@ -1070,17 +1269,7 @@ function createFishingState() {
   });
   cells.forEach((cell) => {
     if (!cell.isSeal) {
-      const roll = Math.random();
-      if (roll < 0.34) cell.rewardType = "fish";
-      else if (roll < 0.57) cell.rewardType = "shrimp";
-      else if (roll < 0.72) cell.rewardType = "shell";
-      else if (roll < 0.88) {
-        cell.rewardType = "gold";
-        cell.rewardAmount = 12 + Math.floor(Math.random() * 16);
-      } else {
-        cell.rewardType = "energy";
-        cell.rewardAmount = 1;
-      }
+      assignFishingCellReward(cell);
     }
   });
   recalculateFishingHints(cells);
@@ -1096,11 +1285,44 @@ function createFishingState() {
     firstHook: true,
     scanArea: [],
     status: "playing",
+    hitSealId: null,
+    pendingSettlementReason: null,
     claimed: false,
     goalReached: false,
     message: "选择下钩、标记、扫描或提示，避开海豹收集奖励。",
     rewards: { fish: 0, shrimp: 0, shell: 0, squid: 0, gold: 0, energy: 0 },
   };
+}
+
+function assignFishingCellReward(cell) {
+  const iceLakeBonus = isBuildingBuilt("ice_lake");
+  const storageBonus = isBuildingBuilt("fish_storage");
+  const canFindSquid = state.level >= TYPE_UNLOCK_LEVEL.squid || isBuildingBuilt("night_bay");
+  const weights = [
+    { type: "fish", weight: storageBonus ? 36 : 30 },
+    { type: "shrimp", weight: 22 },
+    { type: "shell", weight: iceLakeBonus ? 18 : 14 },
+    { type: "gold", weight: iceLakeBonus ? 18 : 22 },
+    { type: "energy", weight: 12 },
+  ];
+  if (canFindSquid) weights.push({ type: "squid", weight: iceLakeBonus ? 10 : 7 });
+
+  const totalWeight = weights.reduce((sum, entry) => sum + entry.weight, 0);
+  let roll = Math.random() * totalWeight;
+  const picked = weights.find((entry) => {
+    roll -= entry.weight;
+    return roll <= 0;
+  }) || weights[0];
+
+  cell.rewardType = picked.type;
+  if (picked.type === "gold") {
+    cell.rewardAmount = (iceLakeBonus ? 22 : 14) + Math.floor(Math.random() * (iceLakeBonus ? 28 : 18));
+  } else if (picked.type === "energy") {
+    cell.rewardAmount = Math.random() < (iceLakeBonus ? 0.42 : 0.22) ? 2 : 1;
+  } else {
+    const doubleChance = picked.type === "fish" && storageBonus ? 0.36 : iceLakeBonus ? 0.25 : 0.14;
+    cell.rewardAmount = Math.random() < doubleChance ? 2 : 1;
+  }
 }
 
 function shuffleIndexes(length) {
@@ -1187,12 +1409,13 @@ function renderFishingGame() {
 
 function renderFishingCell(cell) {
   const scanClass = fishingState.scanArea.includes(cell.id) ? "scan-highlight" : "";
+  const sealClass = fishingState.hitSealId === cell.id ? "seal-jump" : "";
   const tileImage = fishingTileImage(cell);
   const reward = cell.isOpen && !cell.isSeal && cell.rewardType
     ? `<img class="fishing-cell-reward" src="${fishingRewardAsset(cell.rewardType)}" alt="" />`
     : "";
   return `
-    <button class="fishing-cell ${cell.isOpen ? "open" : ""} ${cell.isMarked ? "marked" : ""} ${scanClass}" type="button" data-fishing-cell="${cell.id}">
+    <button class="fishing-cell ${cell.isOpen ? "open" : ""} ${cell.isMarked ? "marked" : ""} ${scanClass} ${sealClass}" type="button" data-fishing-cell="${cell.id}">
       <img src="${tileImage}" alt="" />
       ${reward}
     </button>
@@ -1217,6 +1440,7 @@ function fishingTileImage(cell) {
 
 function fishingRewardAsset(type) {
   if (["fish", "shrimp", "shell", "energy"].includes(type)) return versionedAsset(`assets/fishing/rewards/reward-${type}.png`);
+  if (type === "squid") return versionedAsset("assets/squid-01.png");
   if (type === "gold") return versionedAsset("assets/resource-coins.png");
   return versionedAsset("assets/fishing/rewards/reward-fish.png");
 }
@@ -1254,15 +1478,23 @@ function hookFishingCell(index) {
     cell.isOpen = true;
     fishingState.lives -= 1;
     fishingState.combo = 0;
+    fishingState.hitSealId = cell.id;
     fishingState.message = "哎呀！海豹抢走了鱼饵，但游戏还能继续。";
     setHeroMood("shock", "这里有海豹！下次我们换个冰洞试试。");
+    triggerHeroDizzy();
+    setTimeout(() => {
+      if (fishingState?.hitSealId === cell.id && fishingState.status !== "settlement") {
+        fishingState.hitSealId = null;
+        renderFishingGame();
+      }
+    }, 820);
   } else {
     revealFishingSafe(index);
     fishingState.message = cell.adjacentSealCount === 0
       ? "安全冰洞！附近没有海豹，周围也一起探开啦。"
       : `附近有 ${Math.min(3, cell.adjacentSealCount)} 条小鱼提示，说明海豹离这里不远。`;
   }
-  checkFishingEnd();
+  checkFishingEnd({ delay: cell.isSeal });
 }
 
 function ensureFishingFirstHookSafe(index) {
@@ -1333,7 +1565,12 @@ function useFishingHint() {
   renderFishingGame();
 }
 
-function checkFishingEnd() {
+function triggerHeroDizzy() {
+  heroPenguinEl.classList.add("dizzy");
+  setTimeout(() => heroPenguinEl.classList.remove("dizzy"), 980);
+}
+
+function fishingEndReason() {
   const closedSafeCells = fishingState.cells.some((cell) => !cell.isSeal && !cell.isOpen);
   const goalsDone = Object.entries(FISHING_GOALS)
     .every(([type, goal]) => fishingState.rewards[type] >= goal);
@@ -1343,8 +1580,30 @@ function checkFishingEnd() {
     setHeroMood("cheer", "目标达成！趁体力还够，我们可以再多捞一点。");
   }
   if (fishingState.lives <= 0 || fishingState.actions <= 0 || !closedSafeCells) {
-    finishFishingGame(goalsDone || !closedSafeCells ? "catch" : "tired");
+    return goalsDone || !closedSafeCells ? "catch" : "tired";
   }
+  return null;
+}
+
+function checkFishingEnd({ delay = false } = {}) {
+  const reason = fishingEndReason();
+  if (!reason) return;
+  if (delay) {
+    scheduleFishingSettlement(reason);
+    return;
+  }
+  finishFishingGame(reason);
+}
+
+function scheduleFishingSettlement(reason) {
+  if (!fishingState || fishingState.status !== "playing") return;
+  fishingState.status = "animating";
+  fishingState.pendingSettlementReason = reason;
+  setTimeout(() => {
+    if (!fishingState || fishingState.status !== "animating") return;
+    finishFishingGame(fishingState.pendingSettlementReason || reason);
+    renderFishingGame();
+  }, 920);
 }
 
 function finishFishingGame(reason) {
@@ -1742,6 +2001,18 @@ function syncSurfEffects() {
 
 function renderSurfSelect() {
   const ownedBoards = ownedSurfboards();
+  const encounters = surfEncounterInfo.map((item) => {
+    const icon = item.kind === "reward"
+      ? surfRewardAsset(item.type)
+      : surfObjectAsset({ kind: "obstacle", type: item.type });
+    return `
+      <span class="surf-encounter ${item.kind}">
+        <img src="${icon}" alt="" />
+        <b>${item.title}</b>
+        <small>${item.text}</small>
+      </span>
+    `;
+  }).join("");
   const stages = surfingStages.map((stage) => {
     const locked = state.level < stage.unlockLevel;
     const selected = surfState.stageId === stage.id;
@@ -1769,6 +2040,7 @@ function renderSurfSelect() {
       </div>
       <div class="surf-stage-list">${stages}</div>
       <div class="surf-board-list">${boards}</div>
+      <div class="surf-encounter-list" aria-label="冲浪奖励和惩罚说明">${encounters}</div>
       <button class="primary surf-start" type="button" data-surf-action="start">开始冲浪 1 能量</button>
     </div>
   `;
@@ -1821,7 +2093,9 @@ function surfRewardAsset(type) {
 }
 
 function freeCells() {
-  return state.board.map((tile, index) => tile ? null : index).filter((index) => index !== null);
+  return state.board
+    .map((tile, index) => (!tile && index !== BACKPACK_INDEX ? index : null))
+    .filter((index) => index !== null);
 }
 
 function boardHas(tile) {
@@ -1894,6 +2168,10 @@ function spawnItem() {
 function moveOrMerge(from, to) {
   markAction();
   if (from === to || state.board[from] === null) return;
+  if (to === BACKPACK_INDEX) {
+    storeTileInBackpack(from);
+    return;
+  }
   const source = state.board[from];
   const target = state.board[to];
 
@@ -1952,7 +2230,13 @@ function tidyBoard() {
   const occupied = state.board
     .filter(Boolean)
     .sort((a, b) => TYPE_ORDER[a.type] - TYPE_ORDER[b.type] || a.level - b.level);
-  state.board = occupied.concat(Array(SIZE * SIZE - occupied.length).fill(null));
+  const nextBoard = Array(SIZE * SIZE).fill(null);
+  const playableIndexes = Array.from({ length: SIZE * SIZE }, (_, index) => index)
+    .filter((index) => index !== BACKPACK_INDEX);
+  occupied.forEach((tile, index) => {
+    if (playableIndexes[index] !== undefined) nextBoard[playableIndexes[index]] = tile;
+  });
+  state.board = nextBoard;
   selectedIndex = null;
   setHeroMood("proud", randomOf(dialogueBank.tidy));
   showToast("冰山货架已经整理好。");
@@ -2451,6 +2735,15 @@ boardEl.addEventListener("click", (event) => {
   const cell = event.target.closest(".cell");
   if (!cell) return;
   const index = Number(cell.dataset.index);
+  if (index === BACKPACK_INDEX) {
+    if (selectedIndex !== null && state.board[selectedIndex]) {
+      storeTileInBackpack(selectedIndex);
+    } else {
+      openBackpackWindow();
+    }
+    markAction();
+    return;
+  }
 
   if (selectedIndex === null) {
     if (state.board[index] !== null) selectedIndex = index;
@@ -2459,6 +2752,13 @@ boardEl.addEventListener("click", (event) => {
   }
 
   moveOrMerge(selectedIndex, index);
+});
+
+boardEl.addEventListener("dblclick", (event) => {
+  const cell = event.target.closest(".backpack-cell");
+  if (!cell) return;
+  event.preventDefault();
+  openBackpackWindow();
 });
 
 boardEl.addEventListener("pointerdown", beginTilePointerDrag);
@@ -2526,6 +2826,7 @@ fishingCloseBtn.addEventListener("click", closeFishingGame);
 surfCloseBtn.addEventListener("click", closeSurfGame);
 buildCloseBtn.addEventListener("click", closeBuildMap);
 energyCloseBtn.addEventListener("click", closeEnergyMenu);
+backpackCloseBtn.addEventListener("click", closeBackpackWindow);
 shopTabButtons.forEach((button) => {
   button.addEventListener("click", () => {
     state.shop.activeTab = button.dataset.shopTab;
@@ -2540,9 +2841,19 @@ shopItemsEl.addEventListener("click", (event) => {
   buyShopItem(button.dataset.buyItem);
 });
 buildMapEl.addEventListener("click", (event) => {
+  const actionButton = event.target.closest("[data-build-action]");
+  if (actionButton) {
+    runBuildAction(actionButton.dataset.buildAction);
+    return;
+  }
   const button = event.target.closest("[data-build-node]");
   if (!button) return;
   buildNode(button.dataset.buildNode);
+});
+backpackSlotsEl.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-backpack-slot]");
+  if (!button) return;
+  withdrawBackpackItem(Number(button.dataset.backpackSlot));
 });
 fishingGameEl.addEventListener("click", (event) => {
   const modeButton = event.target.closest("[data-fishing-mode]");

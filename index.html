@@ -11,7 +11,7 @@
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="assets/penguin-01.png" />
     <link rel="apple-touch-icon" href="assets/penguin-01.png" />
-    <link rel="stylesheet" href="styles.css?v=20260520-easter-order-cost" />
+    <link rel="stylesheet" href="styles.css?v=20260520-backpack-buildings" />
   </head>
   <body>
     <div class="app">
@@ -161,6 +161,23 @@
       </section>
     </div>
 
+    <div id="backpackLayer" class="panel-layer" aria-hidden="true">
+      <section class="panel-box backpack-box" role="dialog" aria-modal="true" aria-labelledby="backpackTitle">
+        <div class="panel-heading">
+          <div>
+            <span class="panel-kicker">棋盘背包</span>
+            <h2 id="backpackTitle">小宝背包</h2>
+          </div>
+          <button id="backpackCloseBtn" type="button" aria-label="关闭背包">关闭</button>
+        </div>
+        <div class="backpack-note">
+          <strong id="backpackCapacityText">0/5</strong>
+          <span>点击背包里的素材可以取回棋盘；选中棋盘素材后点击背包格可以收纳。</span>
+        </div>
+        <div id="backpackSlots" class="backpack-slots"></div>
+      </section>
+    </div>
+
     <div id="buildLayer" class="panel-layer" aria-hidden="true">
       <section class="panel-box build-box" role="dialog" aria-modal="true" aria-labelledby="buildTitle">
         <div class="panel-heading">
@@ -231,7 +248,7 @@
       </section>
     </div>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <script src="game.js?v=20260520-easter-order-cost"></script>
+    <script src="game.js?v=20260520-backpack-buildings"></script>
     <script>
       if ("serviceWorker" in navigator && location.protocol !== "file:") {
         window.addEventListener("load", () => {
