@@ -1,4 +1,4 @@
-const CACHE = "xiaobao-ocean-pop-v4";
+const CACHE = "xiaobao-ocean-pop-v5";
 const CORE = [
   "/",
   "/manifest.webmanifest",
@@ -9,11 +9,13 @@ const CORE = [
   "/game-assets/ammo-rainbow-v1.png",
   "/game-assets/ammo-torpedo-v1.png",
   "/game-assets/backpack.png",
+  "/game-assets/cannon-plush-v2.png",
   "/game-assets/bubble-crab-v2.png",
   "/game-assets/bubble-fish-v2.png",
   "/game-assets/bubble-shell-v2.png",
   "/game-assets/bubble-shrimp-v2.png",
   "/game-assets/bubble-squid-v2.png",
+  "/game-assets/gem-pink-v1.png",
   "/game-assets/obstacle-seal.png",
   "/game-assets/peanut-hit.png",
   "/game-assets/peanut-idle.png",
