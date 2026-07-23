@@ -629,7 +629,7 @@ export default function Home() {
     const rect = event.currentTarget.getBoundingClientRect();
     return {
       x: ((event.clientX - rect.left) / rect.width) * 390,
-      y: ((event.clientY - rect.top) / rect.height) * 560,
+      y: ((event.clientY - rect.top) / rect.height) * 730,
     };
   };
 

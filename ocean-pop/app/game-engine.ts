@@ -18,14 +18,14 @@ import {
 } from "./game-core";
 
 const WIDTH = 390;
-const HEIGHT = 560;
+const HEIGHT = 730;
 const RADIUS = 19;
 const DIAMETER = 40;
 const ROW_STEP = 34;
 const BOARD_TOP = 22;
-const DANGER_Y = 445;
+const DANGER_Y = 565;
 const SHOOTER_X = WIDTH / 2;
-const SHOOTER_Y = 514;
+const SHOOTER_Y = 675;
 const PROJECTILE_SPEED = 530;
 
 const KIND_COLORS: Record<BubbleKind, [string, string, string]> = {
@@ -155,6 +155,7 @@ export class OceanPopEngine {
   private penguinFrame = 1;
   private penguinUntil = 0;
   private audio: TinyAudio;
+  private resizeObserver: ResizeObserver | null = null;
 
   constructor(canvas: HTMLCanvasElement, options: EngineOptions) {
     this.canvas = canvas;
@@ -177,11 +178,34 @@ export class OceanPopEngine {
   }
 
   private prepareCanvas() {
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
-    this.canvas.width = WIDTH * dpr;
-    this.canvas.height = HEIGHT * dpr;
     this.canvas.style.aspectRatio = `${WIDTH} / ${HEIGHT}`;
-    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const resize = () => {
+      const rect = this.canvas.getBoundingClientRect();
+      const dpr = Math.min(3, window.devicePixelRatio || 1);
+      const pixelWidth = Math.max(1, Math.round(rect.width * dpr));
+      const pixelHeight = Math.max(1, Math.round(rect.height * dpr));
+
+      if (this.canvas.width !== pixelWidth || this.canvas.height !== pixelHeight) {
+        this.canvas.width = pixelWidth;
+        this.canvas.height = pixelHeight;
+      }
+
+      this.ctx.setTransform(
+        pixelWidth / WIDTH,
+        0,
+        0,
+        pixelHeight / HEIGHT,
+        0,
+        0,
+      );
+      this.ctx.imageSmoothingEnabled = true;
+      this.ctx.imageSmoothingQuality = "high";
+    };
+
+    resize();
+    this.resizeObserver = new ResizeObserver(resize);
+    this.resizeObserver.observe(this.canvas);
   }
 
   private loadPenguins() {
@@ -728,9 +752,9 @@ export class OceanPopEngine {
     ctx.fillStyle = "#0a5e72";
     ctx.beginPath();
     ctx.moveTo(0, HEIGHT);
-    ctx.quadraticCurveTo(40, 500, 88, HEIGHT);
-    ctx.quadraticCurveTo(145, 510, 205, HEIGHT);
-    ctx.quadraticCurveTo(280, 506, WIDTH, HEIGHT);
+    ctx.quadraticCurveTo(40, HEIGHT - 60, 88, HEIGHT);
+    ctx.quadraticCurveTo(145, HEIGHT - 50, 205, HEIGHT);
+    ctx.quadraticCurveTo(280, HEIGHT - 54, WIDTH, HEIGHT);
     ctx.fill();
 
     ctx.strokeStyle = "rgba(114, 227, 181, .45)";
@@ -739,7 +763,14 @@ export class OceanPopEngine {
     for (const x of [18, 350, 372]) {
       ctx.beginPath();
       ctx.moveTo(x, HEIGHT);
-      ctx.bezierCurveTo(x - 12, 520, x + 10, 498, x - 2, 468);
+      ctx.bezierCurveTo(
+        x - 12,
+        HEIGHT - 40,
+        x + 10,
+        HEIGHT - 62,
+        x - 2,
+        HEIGHT - 92,
+      );
       ctx.stroke();
     }
   }
@@ -755,7 +786,7 @@ export class OceanPopEngine {
     let x = SHOOTER_X;
     let y = SHOOTER_Y - 26;
     this.ctx.fillStyle = "rgba(222, 252, 255, .55)";
-    for (let step = 0; step < 34; step += 1) {
+    for (let step = 0; step < Math.ceil(HEIGHT / 12); step += 1) {
       x += vx * 12;
       y += vy * 12;
       if (x <= RADIUS || x >= WIDTH - RADIUS) vx *= -1;
@@ -785,7 +816,7 @@ export class OceanPopEngine {
   private drawPenguin() {
     const image = this.images[this.penguinFrame - 1] ?? this.images[0];
     const penguinX = 53;
-    const penguinY = 450;
+    const penguinY = HEIGHT - 120;
     const penguinSize = 104;
 
     this.ctx.save();
@@ -1153,5 +1184,7 @@ export class OceanPopEngine {
 
   destroy() {
     cancelAnimationFrame(this.animationId);
+    this.resizeObserver?.disconnect();
+    this.resizeObserver = null;
   }
 }
