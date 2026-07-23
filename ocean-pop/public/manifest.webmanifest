@@ -1,0 +1,26 @@
+{
+  "name": "小宝深海泡泡战",
+  "short_name": "小宝泡泡战",
+  "description": "企鹅小宝的竖屏海洋泡泡消除冒险",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#052c55",
+  "theme_color": "#052c55",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
