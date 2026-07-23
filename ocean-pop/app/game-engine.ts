@@ -133,6 +133,7 @@ export class OceanPopEngine {
   private images: HTMLImageElement[] = [];
   private creatureImages: Partial<Record<BubbleKind, HTMLImageElement>> = {};
   private ammoImages: Partial<Record<Exclude<AmmoKind, "normal">, HTMLImageElement>> = {};
+  private cannonImage = new Image();
   private rng: () => number;
   private animationId = 0;
   private lastTime = 0;
@@ -172,6 +173,7 @@ export class OceanPopEngine {
     this.loadPenguins();
     this.loadCreatureImages();
     this.loadAmmoImages();
+    this.cannonImage.src = "/game-assets/cannon-plush-v2.png";
     this.createBoard();
     this.lastTime = performance.now();
     this.animationId = requestAnimationFrame(this.frame);
@@ -630,8 +632,8 @@ export class OceanPopEngine {
     const clampedY = -Math.sqrt(1 - clampedX * clampedX);
     const speedBoost = 1 + (this.options.fireRateLevel - 1) * 0.08;
     this.projectiles.push({
-      x: SHOOTER_X,
-      y: SHOOTER_Y - 20,
+      x: SHOOTER_X + clampedX * 62,
+      y: SHOOTER_Y + clampedY * 62,
       vx: clampedX * PROJECTILE_SPEED * speedBoost,
       vy: clampedY * PROJECTILE_SPEED * speedBoost,
       ammo,
@@ -653,6 +655,11 @@ export class OceanPopEngine {
   press(x: number, y: number) {
     this.aim(x, y);
     this.holding = true;
+    this.shoot(performance.now());
+  }
+
+  fire() {
+    this.holding = false;
     this.shoot(performance.now());
   }
 
@@ -783,8 +790,8 @@ export class OceanPopEngine {
     dx = Math.max(-0.94, Math.min(0.94, dx / length));
     let vx = dx;
     const vy = -Math.sqrt(1 - vx * vx);
-    let x = SHOOTER_X;
-    let y = SHOOTER_Y - 26;
+    let x = SHOOTER_X + vx * 64;
+    let y = SHOOTER_Y + vy * 64;
     this.ctx.fillStyle = "rgba(222, 252, 255, .55)";
     for (let step = 0; step < Math.ceil(HEIGHT / 12); step += 1) {
       x += vx * 12;
@@ -859,25 +866,31 @@ export class OceanPopEngine {
   private drawCannon() {
     const ctx = this.ctx;
     const angle = Math.atan2(this.aimY - SHOOTER_Y, this.aimX - SHOOTER_X);
-    ctx.save();
-    ctx.translate(SHOOTER_X, SHOOTER_Y);
-    ctx.rotate(angle);
-    const tube = ctx.createLinearGradient(0, -10, 58, 10);
-    tube.addColorStop(0, "#c8fbff");
-    tube.addColorStop(0.55, "#6bd6ed");
-    tube.addColorStop(1, "#2e87bd");
-    ctx.fillStyle = tube;
-    ctx.beginPath();
-    ctx.roundRect(4, -11, 56, 22, 9);
-    ctx.fill();
-    ctx.fillStyle = "#e8ffff";
-    ctx.fillRect(48, -14, 12, 28);
-    ctx.restore();
-    ctx.fillStyle = "#2381b8";
-    ctx.beginPath();
-    ctx.arc(SHOOTER_X, SHOOTER_Y, 24, 0, Math.PI * 2);
-    ctx.fill();
-    this.drawProjectile(SHOOTER_X, SHOOTER_Y - 1, this.currentKind, this.selectedAmmo, 0.75);
+    const directionX = Math.cos(angle);
+    const directionY = Math.sin(angle);
+
+    if (this.cannonImage.complete && this.cannonImage.naturalWidth) {
+      ctx.save();
+      ctx.translate(SHOOTER_X, SHOOTER_Y + 5);
+      ctx.rotate(angle + Math.PI / 2);
+      ctx.shadowColor = "rgba(0, 20, 48, .34)";
+      ctx.shadowBlur = 10;
+      ctx.drawImage(this.cannonImage, -56, -112, 112, 112);
+      ctx.restore();
+    } else {
+      ctx.fillStyle = "#67cfea";
+      ctx.beginPath();
+      ctx.arc(SHOOTER_X, SHOOTER_Y, 30, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    this.drawProjectile(
+      SHOOTER_X + directionX * 58,
+      SHOOTER_Y + directionY * 58,
+      this.currentKind,
+      this.selectedAmmo,
+      0.72,
+    );
   }
 
   private drawBubble(cell: BubbleCell, time: number) {

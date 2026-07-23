@@ -18,12 +18,17 @@
 }
 
 html {
+  width: 100%;
+  height: 100%;
   background: #042548;
   overscroll-behavior: none;
 }
 
 body {
+  width: 100%;
+  height: 100%;
   margin: 0;
+  overflow: hidden;
   background: #042548;
   color: var(--ink);
   font-family:
@@ -610,6 +615,8 @@ canvas:focus-visible {
 
 .shop-balance {
   display: inline-flex;
+  align-items: center;
+  gap: 5px;
   margin-top: 9px;
   padding: 6px 10px;
   border-radius: 999px;
@@ -617,6 +624,12 @@ canvas:focus-visible {
   background: #fff2c5;
   font-size: 11px;
   font-weight: 900;
+}
+
+.shop-balance img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
 }
 
 .shop-guide {
@@ -704,6 +717,19 @@ canvas:focus-visible {
 .shop-item button span {
   font-size: 13px;
   font-weight: 1000;
+}
+
+.shop-item .shop-price {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.shop-price img {
+  width: 15px;
+  height: 15px;
+  object-fit: contain;
 }
 
 .shop-item button small {
@@ -1120,13 +1146,11 @@ canvas:focus-visible {
   font-weight: 900;
 }
 
-.pearl-count i {
-  width: 8px;
-  height: 8px;
-  border: 1px solid #fff;
-  border-radius: 50%;
-  background: #8ff0ee;
-  box-shadow: inset -2px -2px 3px #43a8bf;
+.pearl-count img {
+  width: 13px;
+  height: 13px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .22));
 }
 
 .hud-button {
@@ -1223,6 +1247,23 @@ canvas:focus-visible {
 .xiaobao-chatter--visible {
   opacity: 1;
   transform: translateY(0) scale(1);
+}
+
+.cannon-fire-hint {
+  position: absolute;
+  z-index: 6;
+  bottom: 64px;
+  left: 50%;
+  padding: 4px 8px;
+  border: 1px solid rgba(255, 255, 255, .45);
+  border-radius: 999px;
+  color: #e9fdff;
+  background: rgba(3, 35, 67, .56);
+  font-size: 7px;
+  font-weight: 900;
+  letter-spacing: .06em;
+  pointer-events: none;
+  transform: translateX(-50%);
 }
 
 .next-shot--float {
@@ -1712,11 +1753,49 @@ canvas:focus-visible {
 }
 
 @media (max-width: 900px) {
+  .ocean-page,
+  .loading-screen {
+    width: 100vw;
+    min-height: 100svh;
+    height: 100dvh;
+  }
+
+  .ocean-page {
+    display: block;
+  }
+
   .game-phone {
+    width: 100vw;
     min-width: 0;
+    min-height: 100svh;
+    height: 100dvh;
+    max-height: none;
+    aspect-ratio: auto;
     border-radius: 0;
     border: 0;
     box-shadow: none;
+  }
+
+  .play-shell {
+    min-height: 0;
+  }
+
+  .canvas-wrap {
+    flex: 1 1 auto;
+    aspect-ratio: auto;
+  }
+
+  .control-deck {
+    flex: 0 0 auto;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+
+  .base-modal-backdrop {
+    padding:
+      12px
+      max(12px, env(safe-area-inset-right))
+      max(12px, env(safe-area-inset-bottom))
+      max(12px, env(safe-area-inset-left));
   }
 
   .desktop-note,

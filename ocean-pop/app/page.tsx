@@ -200,12 +200,15 @@ function ShopContent({
         <div>
           <p className="eyebrow">OCEAN SUPPLY</p>
           <h2>小宝补给商店</h2>
-          <span className="shop-balance">珍珠 {pearls}</span>
+          <span className="shop-balance">
+            <img src="/game-assets/gem-pink-v1.png" alt="" />
+            {pearls} 钻石
+          </span>
         </div>
       </header>
       <div className="shop-guide">
         <img src={`/game-assets/peanut-${peanutPose}.png`} alt="商店助手花生" />
-        <p>{notice || (peanutPose === "hit" ? "花生提醒你：珍珠还不够。" : "特殊炮弹和炮台道具都会自动放进背包。")}</p>
+        <p>{notice || (peanutPose === "hit" ? "花生提醒你：钻石还不够。" : "特殊炮弹和炮台道具都会自动放进背包。")}</p>
       </div>
       <div className="shop-list">
         {SHOP_OFFERS.map((offer) => (
@@ -216,8 +219,11 @@ function ShopContent({
               <small>{offer.description}</small>
             </div>
             <button onClick={() => onBuy(offer)} disabled={pearls < offer.cost}>
-              <span>{offer.cost}</span>
-              <small>+{offer.amount}</small>
+              <span className="shop-price">
+                <img src="/game-assets/gem-pink-v1.png" alt="" />
+                {offer.cost}
+              </span>
+              <small>购买 +{offer.amount}</small>
             </button>
           </article>
         ))}
@@ -231,7 +237,10 @@ function ShopContent({
             onClick={onUpgrade}
             disabled={fireRateLevel >= 5 || pearls < upgradeCost}
           >
-            <span>{fireRateLevel >= 5 ? "满级" : upgradeCost}</span>
+            <span className="shop-price">
+              {fireRateLevel < 5 && <img src="/game-assets/gem-pink-v1.png" alt="" />}
+              {fireRateLevel >= 5 ? "满级" : upgradeCost}
+            </span>
             <small>{fireRateLevel >= 5 ? "L5" : `L${fireRateLevel + 1}`}</small>
           </button>
         </article>
@@ -559,7 +568,7 @@ export default function Home() {
     const current = saveRef.current;
     if (current.progress.pearls < offer.cost) {
       setPeanutPose("hit");
-      showBaseNotice(`还差 ${offer.cost - current.progress.pearls} 枚珍珠`);
+      showBaseNotice(`还差 ${offer.cost - current.progress.pearls} 枚钻石`);
       window.setTimeout(() => setPeanutPose("idle"), 1800);
       return;
     }
@@ -638,8 +647,18 @@ export default function Home() {
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
     const point = pointerPosition(event);
+    const hitCannon =
+      Math.abs(point.x - 195) <= 72 &&
+      point.y >= 575 &&
+      point.y <= 725;
+
+    if (hitCannon) {
+      engineRef.current?.fire();
+      return;
+    }
+
     aimRef.current = point;
-    engineRef.current?.press(point.x, point.y);
+    engineRef.current?.aim(point.x, point.y);
   };
 
   const onPointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
@@ -712,7 +731,7 @@ export default function Home() {
                   <div className="hero-orbit hero-orbit--three"><BubbleBadge kind="leopard" label={false} /></div>
                   <div className="peanut-helper">
                     <img src={`/game-assets/peanut-${peanutPose}.png`} alt="" />
-                    <span>{peanutPose === "hit" ? "珍珠不够啦！" : "花生帮你看背包"}</span>
+                    <span>{peanutPose === "hit" ? "钻石不够啦！" : "花生帮你看背包"}</span>
                   </div>
                   <div className="hero-glow" />
                   <img src="/penguins/penguin-02.png" alt="挥手的小宝企鹅" />
@@ -743,7 +762,7 @@ export default function Home() {
                     <strong>{totalStars}<span>/36 ★</span></strong>
                   </div>
                   <div>
-                    <small>珍珠</small>
+                    <small>钻石</small>
                     <strong>{save.progress.pearls}<span> 枚</span></strong>
                   </div>
                 </div>
@@ -826,8 +845,8 @@ export default function Home() {
                           </article>
                         ))}
                         <article className="inventory-item inventory-item--pearl">
-                          <span className="inventory-pearl" />
-                          <span>深海珍珠</span>
+                          <img src="/game-assets/gem-pink-v1.png" alt="" />
+                          <span>粉钻</span>
                           <strong>{save.progress.pearls}</strong>
                         </article>
                       </div>
@@ -857,7 +876,10 @@ export default function Home() {
                 <strong>{config.name}</strong>
               </div>
               <div className="hud-actions">
-                <span className="pearl-count"><i />{save.progress.pearls}</span>
+                <span className="pearl-count">
+                  <img src="/game-assets/gem-pink-v1.png" alt="" />
+                  {save.progress.pearls}
+                </span>
                 <button className="hud-button" onClick={toggleMute} aria-label={save.muted ? "打开声音" : "静音"}>
                   {save.muted ? "静" : "声"}
                 </button>
@@ -869,7 +891,7 @@ export default function Home() {
               <canvas
                 ref={canvasRef}
                 className="game-canvas"
-                aria-label="泡泡射击游戏区域。拖动瞄准，按住可以连续发射。"
+                aria-label="泡泡射击游戏区域。点击或拖动海面调整瞄准线，点击炮台发射。"
                 onPointerDown={onPointerDown}
                 onPointerMove={onPointerMove}
                 onPointerUp={releasePointer}
@@ -885,6 +907,7 @@ export default function Home() {
               <div className={`xiaobao-chatter${chatter ? " xiaobao-chatter--visible" : ""}`} role="status">
                 {chatter}
               </div>
+              <div className="cannon-fire-hint" aria-hidden="true">点炮发射</div>
               <div className="next-shot next-shot--float" aria-label={`下一发：${KIND_LABELS[snapshot.nextKind]}`}>
                 <small>下一发</small>
                 <BubbleBadge kind={snapshot.nextKind} label={false} />
@@ -903,7 +926,7 @@ export default function Home() {
                         key={level}
                         className={`${level <= activeRate ? "power-segment power-segment--filled" : "power-segment"}${unlocked ? "" : " power-segment--locked"}${next ? " power-segment--next" : ""}`}
                         onClick={() => chooseRate(level)}
-                        aria-label={unlocked ? `使用 ${level} 级炮台动力` : next ? `用 ${upgradeCost} 珍珠解锁 ${level} 级炮台动力` : `${level} 级炮台动力未解锁`}
+                        aria-label={unlocked ? `使用 ${level} 级炮台动力` : next ? `用 ${upgradeCost} 钻石解锁 ${level} 级炮台动力` : `${level} 级炮台动力未解锁`}
                       >
                         <span aria-hidden="true" />
                       </button>
@@ -941,7 +964,7 @@ export default function Home() {
                   {mode === "level" && result.won && <StarRow value={result.stars} />}
                   <div className="result-score">
                     <span><small>本局分数</small><strong>{result.score.toLocaleString()}</strong></span>
-                    <span><small>{mode === "level" ? "珍珠奖励" : "最高纪录"}</small><strong>{mode === "level" ? `+${result.reward}` : result.best.toLocaleString()}</strong></span>
+                    <span><small>{mode === "level" ? "钻石奖励" : "最高纪录"}</small><strong>{mode === "level" ? `+${result.reward}` : result.best.toLocaleString()}</strong></span>
                   </div>
                   <button
                     className="primary-action primary-action--compact"
