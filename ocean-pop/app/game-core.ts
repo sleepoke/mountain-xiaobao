@@ -49,6 +49,7 @@ export interface SaveDataV1 {
 
 export const SAVE_KEY = "xiaobao-ocean-pop.save.v1";
 export const FIRE_COOLDOWNS = [900, 700, 550, 450, 350] as const;
+export const LEOPARD_TURNS = 6;
 export const NORMAL_KINDS: BubbleKind[] = [
   "fish",
   "shrimp",
@@ -213,7 +214,7 @@ export function advanceLeopards(grid: Map<string, BubbleCell>) {
     .filter((bubble) => bubble.kind === "leopard")
     .sort((a, b) => a.row - b.row || a.col - b.col);
   for (const leopard of leopards) {
-    leopard.leopardTimer = (leopard.leopardTimer ?? 3) - 1;
+    leopard.leopardTimer = (leopard.leopardTimer ?? LEOPARD_TURNS) - 1;
     if (leopard.leopardTimer > 0) continue;
     const target = neighborCoords(leopard.row, leopard.col)
       .map((coord) => grid.get(cellKey(coord.row, coord.col)))
@@ -221,10 +222,10 @@ export function advanceLeopards(grid: Map<string, BubbleCell>) {
       .sort((a, b) => b.row - a.row || a.col - b.col)[0];
     if (target) {
       target.kind = "leopard";
-      target.leopardTimer = 3;
+      target.leopardTimer = LEOPARD_TURNS;
       infected.push(target);
     }
-    leopard.leopardTimer = 3;
+    leopard.leopardTimer = LEOPARD_TURNS;
   }
   return infected;
 }

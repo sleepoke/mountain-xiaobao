@@ -1,5 +1,6 @@
 import {
   FIRE_COOLDOWNS,
+  LEOPARD_TURNS,
   type AmmoKind,
   type BubbleCell,
   type BubbleKind,
@@ -130,6 +131,8 @@ export class OceanPopEngine {
   private projectiles: Projectile[] = [];
   private particles: Particle[] = [];
   private images: HTMLImageElement[] = [];
+  private creatureImages: Partial<Record<BubbleKind, HTMLImageElement>> = {};
+  private ammoImages: Partial<Record<Exclude<AmmoKind, "normal">, HTMLImageElement>> = {};
   private rng: () => number;
   private animationId = 0;
   private lastTime = 0;
@@ -166,6 +169,8 @@ export class OceanPopEngine {
     this.audio = new TinyAudio(options.muted);
     this.prepareCanvas();
     this.loadPenguins();
+    this.loadCreatureImages();
+    this.loadAmmoImages();
     this.createBoard();
     this.lastTime = performance.now();
     this.animationId = requestAnimationFrame(this.frame);
@@ -187,6 +192,37 @@ export class OceanPopEngine {
     });
   }
 
+  private loadCreatureImages() {
+    const sources: Partial<Record<BubbleKind, string>> = {
+      fish: "/game-assets/bubble-fish-v2.png",
+      shrimp: "/game-assets/bubble-shrimp-v2.png",
+      squid: "/game-assets/bubble-squid-v2.png",
+      crab: "/game-assets/bubble-crab-v2.png",
+      shell: "/game-assets/bubble-shell-v2.png",
+    };
+    for (const [kind, source] of Object.entries(sources) as [BubbleKind, string][]) {
+      const image = new Image();
+      image.src = source;
+      this.creatureImages[kind] = image;
+    }
+  }
+
+  private loadAmmoImages() {
+    const sources: Record<Exclude<AmmoKind, "normal">, string> = {
+      rainbow: "/game-assets/ammo-rainbow-v1.png",
+      bomb: "/game-assets/ammo-bomb-v1.png",
+      torpedo: "/game-assets/ammo-torpedo-v1.png",
+    };
+    for (const [ammo, source] of Object.entries(sources) as [
+      Exclude<AmmoKind, "normal">,
+      string,
+    ][]) {
+      const image = new Image();
+      image.src = source;
+      this.ammoImages[ammo] = image;
+    }
+  }
+
   private createBoard() {
     const candidates: BubbleCell[] = [];
     for (let row = 0; row < this.options.config.rows; row += 1) {
@@ -206,7 +242,7 @@ export class OceanPopEngine {
       const index = Math.floor(this.rng() * replaceable.length);
       const chosen = replaceable.splice(index, 1)[0];
       chosen.kind = "leopard";
-      chosen.leopardTimer = 3;
+      chosen.leopardTimer = LEOPARD_TURNS;
     }
     for (const cell of candidates) this.grid.set(cellKey(cell.row, cell.col), cell);
   }
@@ -515,7 +551,7 @@ export class OceanPopEngine {
         row: 0,
         col,
         kind,
-        leopardTimer: kind === "leopard" ? 3 : undefined,
+        leopardTimer: kind === "leopard" ? LEOPARD_TURNS : undefined,
       };
       this.grid.set(cellKey(0, col), bubble);
     }
@@ -533,7 +569,7 @@ export class OceanPopEngine {
           row,
           col,
           kind,
-          leopardTimer: kind === "leopard" ? 3 : undefined,
+          leopardTimer: kind === "leopard" ? LEOPARD_TURNS : undefined,
         });
       }
     }
@@ -568,11 +604,12 @@ export class OceanPopEngine {
     const length = Math.max(1, Math.hypot(dx, dy));
     const clampedX = Math.max(-0.94, Math.min(0.94, dx / length));
     const clampedY = -Math.sqrt(1 - clampedX * clampedX);
+    const speedBoost = 1 + (this.options.fireRateLevel - 1) * 0.08;
     this.projectiles.push({
       x: SHOOTER_X,
       y: SHOOTER_Y - 20,
-      vx: clampedX * PROJECTILE_SPEED,
-      vy: clampedY * PROJECTILE_SPEED,
+      vx: clampedX * PROJECTILE_SPEED * speedBoost,
+      vy: clampedY * PROJECTILE_SPEED * speedBoost,
       ammo,
       kind: this.currentKind,
       pierced: 0,
@@ -747,16 +784,43 @@ export class OceanPopEngine {
 
   private drawPenguin() {
     const image = this.images[this.penguinFrame - 1] ?? this.images[0];
+    const penguinX = 53;
+    const penguinY = 450;
+    const penguinSize = 104;
+
+    this.ctx.save();
+    this.ctx.fillStyle = "rgba(1, 28, 57, .2)";
+    this.ctx.beginPath();
+    this.ctx.ellipse(
+      penguinX + penguinSize / 2,
+      penguinY + penguinSize - 5,
+      38,
+      8,
+      0,
+      0,
+      Math.PI * 2,
+    );
+    this.ctx.fill();
+    this.ctx.restore();
+
     if (image?.complete && image.naturalWidth) {
       this.ctx.save();
       this.ctx.shadowColor = "rgba(0, 18, 50, .32)";
       this.ctx.shadowBlur = 12;
-      this.ctx.drawImage(image, 135, 435, 120, 120);
+      this.ctx.drawImage(image, penguinX, penguinY, penguinSize, penguinSize);
       this.ctx.restore();
     } else {
       this.ctx.fillStyle = "#eefaff";
       this.ctx.beginPath();
-      this.ctx.ellipse(SHOOTER_X, 500, 42, 49, 0, 0, Math.PI * 2);
+      this.ctx.ellipse(
+        penguinX + penguinSize / 2,
+        penguinY + penguinSize / 2,
+        36,
+        43,
+        0,
+        0,
+        Math.PI * 2,
+      );
       this.ctx.fill();
     }
   }
@@ -804,7 +868,7 @@ export class OceanPopEngine {
       this.ctx.font = "700 10px ui-rounded, sans-serif";
       this.ctx.textAlign = "center";
       this.ctx.textBaseline = "middle";
-      this.ctx.fillText(String(cell.leopardTimer ?? 3), 13, -12.5);
+      this.ctx.fillText(String(cell.leopardTimer ?? LEOPARD_TURNS), 13, -12.5);
     }
     this.ctx.restore();
   }
@@ -822,6 +886,22 @@ export class OceanPopEngine {
     ctx.scale(scale, scale);
     ctx.shadowColor = "rgba(0, 21, 55, .3)";
     ctx.shadowBlur = 6;
+
+    if (ammo === "normal" && this.drawCreatureBubble(kind)) {
+      ctx.restore();
+      return;
+    }
+
+    if (ammo !== "normal") {
+      const ammoImage = this.ammoImages[ammo];
+      if (ammoImage?.complete && ammoImage.naturalWidth) {
+        const size = ammo === "torpedo" ? 39 : 38;
+        ctx.drawImage(ammoImage, -size / 2, -size / 2, size, size);
+        ctx.restore();
+        return;
+      }
+    }
+
     const palette = KIND_COLORS[kind];
     const bubble = ctx.createRadialGradient(-7, -8, 2, 0, 0, RADIUS + 3);
     bubble.addColorStop(0, ammo === "rainbow" ? "#fff7b2" : palette[0]);
@@ -878,8 +958,54 @@ export class OceanPopEngine {
     ctx.restore();
   }
 
+  private drawCreatureBubble(kind: BubbleKind) {
+    const ctx = this.ctx;
+    const sprite = this.creatureImages[kind];
+    if (!sprite?.complete || !sprite.naturalWidth) return false;
+
+    const size = 38;
+    ctx.save();
+    ctx.shadowColor = "rgba(0, 24, 58, .34)";
+    ctx.shadowBlur = 7;
+    ctx.shadowOffsetY = 2;
+    ctx.drawImage(sprite, -size / 2, -size / 2, size, size);
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+
+    const glass = ctx.createRadialGradient(-9, -11, 1, -2, -3, RADIUS + 1);
+    glass.addColorStop(0, "rgba(255,255,255,.5)");
+    glass.addColorStop(0.22, "rgba(255,255,255,.12)");
+    glass.addColorStop(0.68, "rgba(123,230,255,.03)");
+    glass.addColorStop(1, "rgba(34,147,210,.14)");
+    ctx.fillStyle = glass;
+    ctx.beginPath();
+    ctx.arc(0, 0, RADIUS - 0.6, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = "rgba(224, 251, 255, .76)";
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.arc(0, 0, RADIUS - 1, Math.PI * 0.08, Math.PI * 1.18);
+    ctx.stroke();
+
+    ctx.strokeStyle = "rgba(255,255,255,.88)";
+    ctx.lineWidth = 2.1;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.arc(-4, -5, RADIUS - 6, Math.PI * 1.08, Math.PI * 1.53);
+    ctx.stroke();
+    ctx.restore();
+    return true;
+  }
+
   private drawCreature(kind: BubbleKind) {
     const ctx = this.ctx;
+    const sprite = this.creatureImages[kind];
+    if (sprite?.complete && sprite.naturalWidth) {
+      const size = 31;
+      ctx.drawImage(sprite, -size / 2, -size / 2, size, size);
+      return;
+    }
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.strokeStyle = "rgba(3, 38, 70, .72)";

@@ -40,6 +40,12 @@ const AMMO: {
   { id: "torpedo", label: "鱼雷", short: "➤", description: "连续穿透两个泡泡" },
 ];
 
+const AMMO_ART: Partial<Record<AmmoKind, string>> = {
+  rainbow: "/game-assets/ammo-rainbow-v1.png",
+  bomb: "/game-assets/ammo-bomb-v1.png",
+  torpedo: "/game-assets/ammo-torpedo-v1.png",
+};
+
 const EMPTY_SNAPSHOT: EngineSnapshot = {
   score: 0,
   combo: 0,
@@ -68,6 +74,56 @@ const ENDLESS_CONFIG: LevelConfig = {
 };
 
 type View = "home" | "levels" | "game";
+type BasePanel = "shop" | "backpack" | null;
+type PeanutPose = "idle" | "hit" | "shell" | "shrimp";
+
+const KIND_ART: Partial<Record<BubbleKind, string>> = {
+  fish: "/game-assets/bubble-fish-v2.png",
+  shrimp: "/game-assets/bubble-shrimp-v2.png",
+  squid: "/game-assets/bubble-squid-v2.png",
+  crab: "/game-assets/bubble-crab-v2.png",
+  shell: "/game-assets/bubble-shell-v2.png",
+};
+
+interface ShopOffer {
+  id: Exclude<AmmoKind, "normal">;
+  label: string;
+  description: string;
+  amount: number;
+  cost: number;
+  image: string;
+  peanutPose: PeanutPose;
+}
+
+const SHOP_OFFERS: ShopOffer[] = [
+  {
+    id: "rainbow",
+    label: "彩虹珍珠弹",
+    description: "自动匹配接触到的海洋伙伴",
+    amount: 2,
+    cost: 12,
+    image: "/game-assets/ammo-rainbow-v1.png",
+    peanutPose: "shell",
+  },
+  {
+    id: "bomb",
+    label: "珊瑚爆破弹",
+    description: "命中后清除周围一圈泡泡",
+    amount: 1,
+    cost: 14,
+    image: "/game-assets/ammo-bomb-v1.png",
+    peanutPose: "shrimp",
+  },
+  {
+    id: "torpedo",
+    label: "穿透鱼雷",
+    description: "连续穿透并清除两个泡泡",
+    amount: 1,
+    cost: 16,
+    image: "/game-assets/ammo-torpedo-v1.png",
+    peanutPose: "idle",
+  },
+];
 
 interface ResultState {
   won: boolean;
@@ -104,11 +160,83 @@ function BubbleBadge({
   kind: BubbleKind;
   label?: boolean;
 }) {
+  const hasCharacterArt = Boolean(KIND_ART[kind]);
   return (
-    <span className={`bubble-badge bubble-badge--${kind}`} title={KIND_LABELS[kind]}>
-      <span className="bubble-badge__mark">{KIND_LABELS[kind].slice(0, 1)}</span>
+    <span
+      className={`bubble-badge bubble-badge--${kind}${hasCharacterArt ? " bubble-badge--art" : ""}`}
+      title={KIND_LABELS[kind]}
+    >
+      {hasCharacterArt ? (
+        <img className="bubble-badge__image" src={KIND_ART[kind]} alt="" />
+      ) : (
+        <span className="bubble-badge__mark">{KIND_LABELS[kind].slice(0, 1)}</span>
+      )}
       {label && <span>{KIND_LABELS[kind]}</span>}
     </span>
+  );
+}
+
+function ShopContent({
+  pearls,
+  peanutPose,
+  fireRateLevel,
+  upgradeCost,
+  notice,
+  onBuy,
+  onUpgrade,
+}: {
+  pearls: number;
+  peanutPose: PeanutPose;
+  fireRateLevel: number;
+  upgradeCost: number;
+  notice: string;
+  onBuy: (offer: ShopOffer) => void;
+  onUpgrade: () => void;
+}) {
+  return (
+    <>
+      <header className="shop-header">
+        <img src="/game-assets/shop-board.png" alt="小宝的冰雪补给商店" />
+        <div>
+          <p className="eyebrow">OCEAN SUPPLY</p>
+          <h2>小宝补给商店</h2>
+          <span className="shop-balance">珍珠 {pearls}</span>
+        </div>
+      </header>
+      <div className="shop-guide">
+        <img src={`/game-assets/peanut-${peanutPose}.png`} alt="商店助手花生" />
+        <p>{notice || (peanutPose === "hit" ? "花生提醒你：珍珠还不够。" : "特殊炮弹和炮台道具都会自动放进背包。")}</p>
+      </div>
+      <div className="shop-list">
+        {SHOP_OFFERS.map((offer) => (
+          <article className="shop-item" key={offer.id}>
+            <img src={offer.image} alt="" />
+            <div>
+              <strong>{offer.label}</strong>
+              <small>{offer.description}</small>
+            </div>
+            <button onClick={() => onBuy(offer)} disabled={pearls < offer.cost}>
+              <span>{offer.cost}</span>
+              <small>+{offer.amount}</small>
+            </button>
+          </article>
+        ))}
+        <article className="shop-item shop-item--power">
+          <span className="power-chip-art" aria-hidden="true"><i /><i /><i /><i /><i /></span>
+          <div>
+            <strong>炮台动力芯片</strong>
+            <small>同时提升炮弹飞行速度与连续发射速度</small>
+          </div>
+          <button
+            onClick={onUpgrade}
+            disabled={fireRateLevel >= 5 || pearls < upgradeCost}
+          >
+            <span>{fireRateLevel >= 5 ? "满级" : upgradeCost}</span>
+            <small>{fireRateLevel >= 5 ? "L5" : `L${fireRateLevel + 1}`}</small>
+          </button>
+        </article>
+      </div>
+    </>
   );
 }
 
@@ -122,10 +250,17 @@ export default function Home() {
   const [snapshot, setSnapshot] = useState<EngineSnapshot>(EMPTY_SNAPSHOT);
   const [result, setResult] = useState<ResultState | null>(null);
   const [activeRate, setActiveRate] = useState(1);
+  const [basePanel, setBasePanel] = useState<BasePanel>(null);
+  const [peanutPose, setPeanutPose] = useState<PeanutPose>("idle");
+  const [baseNotice, setBaseNotice] = useState("");
+  const [chatter, setChatter] = useState("");
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<OceanPopEngine | null>(null);
   const saveRef = useRef(save);
   const aimRef = useRef({ x: 195, y: 180 });
+  const chatterTimerRef = useRef<number | null>(null);
+  const chatterStateRef = useRef({ combo: 0, misses: 0, ammo: "normal" as AmmoKind });
+  const shopResumeRef = useRef(false);
 
   const config = mode === "level" ? LEVELS[levelIndex] : ENDLESS_CONFIG;
   const totalStars = save.progress.stars.reduce((sum, stars) => sum + stars, 0);
@@ -143,6 +278,15 @@ export default function Home() {
     },
     [],
   );
+
+  const say = useCallback((message: string) => {
+    if (chatterTimerRef.current) window.clearTimeout(chatterTimerRef.current);
+    setChatter(message);
+    chatterTimerRef.current = window.setTimeout(() => {
+      setChatter("");
+      chatterTimerRef.current = null;
+    }, 2300);
+  }, []);
 
   useEffect(() => {
     try {
@@ -171,6 +315,8 @@ export default function Home() {
       if ("caches" in window) {
         void caches.delete("xiaobao-ocean-pop-v1");
         void caches.delete("xiaobao-ocean-pop-v2");
+        void caches.delete("xiaobao-ocean-pop-v3");
+        void caches.delete("xiaobao-ocean-pop-v4");
       }
     } else if ("serviceWorker" in navigator) {
       const register = () => void navigator.serviceWorker.register("/sw.js");
@@ -183,6 +329,53 @@ export default function Home() {
   useEffect(() => {
     saveRef.current = save;
   }, [save]);
+
+  useEffect(
+    () => () => {
+      if (chatterTimerRef.current) window.clearTimeout(chatterTimerRef.current);
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (view !== "game") return;
+    chatterStateRef.current = { combo: 0, misses: 0, ammo: "normal" };
+    say(mode === "level" ? "小宝准备好啦，瞄准再发射！" : "越往深海越要稳稳地打哦～");
+  }, [mode, runId, say, view]);
+
+  useEffect(() => {
+    if (view !== "game" || snapshot.phase !== "playing") return;
+    const previous = chatterStateRef.current;
+    if (snapshot.combo > previous.combo && snapshot.combo >= 2) {
+      say(snapshot.combo >= 4 ? "哇！这串连击闪闪发光！" : "连起来啦，再来一发～");
+    } else if (snapshot.misses > previous.misses) {
+      say(
+        snapshot.misses >= snapshot.missLimit - 1
+          ? "先别急，小豹行动变慢了，找准角度！"
+          : "这一发没消掉，换个角度试试看？",
+      );
+    } else if (snapshot.selectedAmmo !== previous.ammo && snapshot.selectedAmmo !== "normal") {
+      const lines: Record<Exclude<AmmoKind, "normal">, string> = {
+        rainbow: "彩虹珍珠会认出碰到的伙伴！",
+        bomb: "爆破弹来啦，离小豹近一点打！",
+        torpedo: "鱼雷能一口气穿过两个泡泡！",
+      };
+      say(lines[snapshot.selectedAmmo]);
+    }
+    chatterStateRef.current = {
+      combo: snapshot.combo,
+      misses: snapshot.misses,
+      ammo: snapshot.selectedAmmo,
+    };
+  }, [say, snapshot, view]);
+
+  useEffect(() => {
+    const closePanel = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setBasePanel(null);
+    };
+    window.addEventListener("keydown", closePanel);
+    return () => window.removeEventListener("keydown", closePanel);
+  }, []);
 
   const consumeAmmo = useCallback(
     (ammo: AmmoKind) => {
@@ -352,6 +545,40 @@ export default function Home() {
     engineRef.current?.setMuted(muted);
   };
 
+  const showBaseNotice = (message: string) => {
+    setBaseNotice(message);
+    window.setTimeout(() => setBaseNotice(""), 2200);
+  };
+
+  const manualSave = () => {
+    writeSave(saveRef.current);
+    showBaseNotice("进度已安全存到本机");
+  };
+
+  const buyOffer = (offer: (typeof SHOP_OFFERS)[number]) => {
+    const current = saveRef.current;
+    if (current.progress.pearls < offer.cost) {
+      setPeanutPose("hit");
+      showBaseNotice(`还差 ${offer.cost - current.progress.pearls} 枚珍珠`);
+      window.setTimeout(() => setPeanutPose("idle"), 1800);
+      return;
+    }
+    commitSave((previous) => ({
+      ...previous,
+      progress: {
+        ...previous.progress,
+        pearls: previous.progress.pearls - offer.cost,
+        ammo: {
+          ...previous.progress.ammo,
+          [offer.id]: Math.min(99, previous.progress.ammo[offer.id] + offer.amount),
+        },
+      },
+    }));
+    setPeanutPose(offer.peanutPose);
+    showBaseNotice(`${offer.label} +${offer.amount}，已放入背包`);
+    window.setTimeout(() => setPeanutPose("idle"), 2400);
+  };
+
   const upgradeRate = () => {
     const current = saveRef.current;
     const level = current.progress.fireRateLevel;
@@ -367,6 +594,8 @@ export default function Home() {
       },
     }));
     setActiveRate(nextLevel);
+    showBaseNotice(`炮台动力升到 L${nextLevel}`);
+    if (view === "game") say("动力变强啦，炮弹会飞得更快！");
   };
 
   const chooseRate = (level: number) => {
@@ -380,6 +609,18 @@ export default function Home() {
   const selectAmmo = (ammo: AmmoKind) => {
     if (ammo !== "normal" && save.progress.ammo[ammo] <= 0) return;
     engineRef.current?.selectAmmo(ammo);
+  };
+
+  const openGameShop = () => {
+    shopResumeRef.current = snapshot.phase === "playing";
+    if (shopResumeRef.current) engineRef.current?.pause();
+    setBasePanel("shop");
+  };
+
+  const closeGameShop = () => {
+    setBasePanel(null);
+    if (shopResumeRef.current && !result) engineRef.current?.resume();
+    shopResumeRef.current = false;
   };
 
   const pointerPosition = (
@@ -440,6 +681,23 @@ export default function Home() {
 
             {view === "home" ? (
               <>
+                <div className="base-tools" aria-label="基地功能">
+                  <button className="base-tool" onClick={() => setBasePanel("shop")}>
+                    <img src="/game-assets/shop-board.png" alt="" />
+                    <span>商店</span>
+                  </button>
+                  <button className="base-tool" onClick={() => setBasePanel("backpack")}>
+                    <img src="/game-assets/backpack.png" alt="" />
+                    <span>背包</span>
+                  </button>
+                  <button className="base-tool" onClick={manualSave}>
+                    <img src="/game-assets/save.png" alt="" />
+                    <span>存档</span>
+                  </button>
+                  <span className={`base-notice${baseNotice ? " base-notice--visible" : ""}`} role="status">
+                    {baseNotice}
+                  </span>
+                </div>
                 <div className="hero-copy">
                   <p className="eyebrow">PENGUIN OCEAN POP</p>
                   <h1>
@@ -452,6 +710,10 @@ export default function Home() {
                   <div className="hero-orbit hero-orbit--one"><BubbleBadge kind="fish" label={false} /></div>
                   <div className="hero-orbit hero-orbit--two"><BubbleBadge kind="shell" label={false} /></div>
                   <div className="hero-orbit hero-orbit--three"><BubbleBadge kind="leopard" label={false} /></div>
+                  <div className="peanut-helper">
+                    <img src={`/game-assets/peanut-${peanutPose}.png`} alt="" />
+                    <span>{peanutPose === "hit" ? "珍珠不够啦！" : "花生帮你看背包"}</span>
+                  </div>
                   <div className="hero-glow" />
                   <img src="/penguins/penguin-02.png" alt="挥手的小宝企鹅" />
                 </div>
@@ -517,8 +779,69 @@ export default function Home() {
                 </div>
                 <div className="map-tip">
                   <BubbleBadge kind="leopard" label={false} />
-                  <p><strong>小心小豹泡泡！</strong>未消除的射击会让它感染身边的泡泡。</p>
+                  <img className="map-tip__seal" src="/game-assets/obstacle-seal.png" alt="浮冰上的海豹" />
+                  <p><strong>小心小豹泡泡！</strong>累计 6 次未消除射击后，它才会感染身边的泡泡。</p>
                 </div>
+              </div>
+            )}
+
+            {basePanel && (
+              <div className="base-modal-backdrop" role="presentation" onPointerDown={() => setBasePanel(null)}>
+                <section
+                  className={`base-modal base-modal--${basePanel}`}
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label={basePanel === "shop" ? "小宝补给商店" : "小宝的道具背包"}
+                  onPointerDown={(event) => event.stopPropagation()}
+                >
+                  <button className="base-modal__close" onClick={() => setBasePanel(null)} aria-label="关闭">
+                    ×
+                  </button>
+                  {basePanel === "shop" ? (
+                    <ShopContent
+                      pearls={save.progress.pearls}
+                      peanutPose={peanutPose}
+                      fireRateLevel={save.progress.fireRateLevel}
+                      upgradeCost={upgradeCost}
+                      notice={baseNotice}
+                      onBuy={buyOffer}
+                      onUpgrade={upgradeRate}
+                    />
+                  ) : (
+                    <>
+                      <header className="backpack-header">
+                        <img src="/game-assets/backpack.png" alt="小宝的蓝色企鹅背包" />
+                        <div>
+                          <p className="eyebrow">ITEM CASE</p>
+                          <h2>小宝的道具背包</h2>
+                          <p>进入关卡后，可以在炮台下方切换炮弹。</p>
+                        </div>
+                      </header>
+                      <div className="inventory-grid">
+                        {SHOP_OFFERS.map((offer) => (
+                          <article className="inventory-item" key={offer.id}>
+                            <img src={offer.image} alt="" />
+                            <span>{offer.label}</span>
+                            <strong>{save.progress.ammo[offer.id]}</strong>
+                          </article>
+                        ))}
+                        <article className="inventory-item inventory-item--pearl">
+                          <span className="inventory-pearl" />
+                          <span>深海珍珠</span>
+                          <strong>{save.progress.pearls}</strong>
+                        </article>
+                      </div>
+                      <div className="backpack-footer">
+                        <img src="/game-assets/obstacle-seal.png" alt="" />
+                        <p>海豹检查完毕：道具会自动保存在这台设备上。</p>
+                        <button onClick={manualSave}>
+                          <img src="/game-assets/save.png" alt="" />
+                          立即存档
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </section>
               </div>
             )}
           </div>
@@ -558,6 +881,41 @@ export default function Home() {
                 <span className={`miss-chip${snapshot.misses >= snapshot.missLimit - 1 ? " miss-chip--danger" : ""}`}>
                   下压 {snapshot.misses}/{snapshot.missLimit}
                 </span>
+              </div>
+              <div className={`xiaobao-chatter${chatter ? " xiaobao-chatter--visible" : ""}`} role="status">
+                {chatter}
+              </div>
+              <div className="next-shot next-shot--float" aria-label={`下一发：${KIND_LABELS[snapshot.nextKind]}`}>
+                <small>下一发</small>
+                <BubbleBadge kind={snapshot.nextKind} label={false} />
+              </div>
+              <div
+                className="power-console"
+                aria-label="炮台动力调节"
+                onPointerDown={(event) => event.stopPropagation()}
+              >
+                <div className="power-console__track">
+                  {[1, 2, 3, 4, 5].map((level) => {
+                    const unlocked = level <= save.progress.fireRateLevel;
+                    const next = level === save.progress.fireRateLevel + 1;
+                    return (
+                      <button
+                        key={level}
+                        className={`${level <= activeRate ? "power-segment power-segment--filled" : "power-segment"}${unlocked ? "" : " power-segment--locked"}${next ? " power-segment--next" : ""}`}
+                        onClick={() => chooseRate(level)}
+                        aria-label={unlocked ? `使用 ${level} 级炮台动力` : next ? `用 ${upgradeCost} 珍珠解锁 ${level} 级炮台动力` : `${level} 级炮台动力未解锁`}
+                      >
+                        <span aria-hidden="true" />
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="power-console__meta">
+                  <strong>威力 L{activeRate}</strong>
+                  <small>
+                    飞行 +{(activeRate - 1) * 8}% · {FIRE_COOLDOWNS[activeRate - 1]}ms
+                  </small>
+                </div>
               </div>
               {snapshot.phase === "paused" && !result && (
                 <div className="game-overlay">
@@ -603,51 +961,7 @@ export default function Home() {
             </div>
 
             <div className="control-deck">
-              <div className="shot-info">
-                <div className="next-shot">
-                  <small>下一发</small>
-                  <BubbleBadge kind={snapshot.nextKind} />
-                </div>
-                <div className="cooldown-box">
-                  <div
-                    className="cooldown-ring"
-                    style={{ "--cooldown": `${snapshot.cooldownProgress * 360}deg` } as React.CSSProperties}
-                  >
-                    <span>L{activeRate}</span>
-                  </div>
-                  <div>
-                    <small>炮台射速</small>
-                    <strong>{FIRE_COOLDOWNS[activeRate - 1]}ms</strong>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rate-row" aria-label="射速等级">
-                <span>射速</span>
-                <div className="rate-pips">
-                  {[1, 2, 3, 4, 5].map((level) => {
-                    const unlocked = level <= save.progress.fireRateLevel;
-                    const next = level === save.progress.fireRateLevel + 1;
-                    return (
-                      <button
-                        key={level}
-                        className={`${level === activeRate ? "rate-pip rate-pip--active" : "rate-pip"}${unlocked ? "" : " rate-pip--locked"}${next ? " rate-pip--next" : ""}`}
-                        onClick={() => chooseRate(level)}
-                        aria-label={unlocked ? `使用 ${level} 级射速` : next ? `解锁 ${level} 级射速` : `${level} 级未解锁`}
-                      >
-                        {level}
-                      </button>
-                    );
-                  })}
-                </div>
-                {save.progress.fireRateLevel < 5 && (
-                  <button className="upgrade-chip" disabled={save.progress.pearls < upgradeCost} onClick={upgradeRate}>
-                    升级 {upgradeCost}
-                  </button>
-                )}
-              </div>
-
-              <div className="ammo-row" aria-label="选择炮弹">
+              <div className="action-row" aria-label="炮台快捷菜单">
                 {AMMO.map((ammo) => {
                   const count = ammo.id === "normal" ? "∞" : save.progress.ammo[ammo.id];
                   const empty = ammo.id !== "normal" && count === 0;
@@ -659,15 +973,46 @@ export default function Home() {
                       onClick={() => selectAmmo(ammo.id)}
                       title={ammo.description}
                     >
-                      <span className="ammo-symbol">{ammo.short}</span>
+                      {AMMO_ART[ammo.id] ? (
+                        <img className="ammo-icon" src={AMMO_ART[ammo.id]} alt="" />
+                      ) : (
+                        <span className="ammo-symbol">{ammo.short}</span>
+                      )}
                       <span>{ammo.label}</span>
                       <b>{count}</b>
                     </button>
                   );
                 })}
+                <button className="ammo-button shop-quick-button" onClick={openGameShop}>
+                  <img className="ammo-icon" src="/game-assets/shop-board.png" alt="" />
+                  <span>商店</span>
+                  <b>{save.progress.pearls}</b>
+                </button>
               </div>
-              <p className="control-hint">{currentAmmoDescription} · 拖动瞄准，按住连射</p>
+              <p className="control-hint">{currentAmmoDescription} · 动力等级越高，炮弹飞得更快、连射等待更短</p>
             </div>
+            {basePanel === "shop" && (
+              <div className="base-modal-backdrop game-shop-backdrop" role="presentation" onPointerDown={closeGameShop}>
+                <section
+                  className="base-modal base-modal--shop"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label="小宝补给商店"
+                  onPointerDown={(event) => event.stopPropagation()}
+                >
+                  <button className="base-modal__close" onClick={closeGameShop} aria-label="关闭">×</button>
+                  <ShopContent
+                    pearls={save.progress.pearls}
+                    peanutPose={peanutPose}
+                    fireRateLevel={save.progress.fireRateLevel}
+                    upgradeCost={upgradeCost}
+                    notice={baseNotice}
+                    onBuy={buyOffer}
+                    onUpgrade={upgradeRate}
+                  />
+                </section>
+              </div>
+            )}
           </div>
         )}
       </section>
