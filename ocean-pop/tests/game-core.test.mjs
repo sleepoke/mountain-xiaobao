@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   DEFAULT_SAVE,
+  LEOPARD_TURNS,
   advanceLeopards,
   cellKey,
   findCluster,
@@ -67,7 +68,19 @@ test("leopard countdown infects a deterministic neighbor", () => {
   const infected = advanceLeopards(grid);
   assert.equal(infected.length, 1);
   assert.equal(infected[0].kind, "leopard");
-  assert.equal(leopard.leopardTimer, 3);
+  assert.equal(leopard.leopardTimer, LEOPARD_TURNS);
+});
+
+test("leopard growth now takes six missed shots", () => {
+  const leopard = { ...cell(1, 1, 1, "leopard"), leopardTimer: LEOPARD_TURNS };
+  const fish = cell(2, 2, 1, "fish");
+  const grid = new Map(
+    [leopard, fish].map((bubble) => [cellKey(bubble.row, bubble.col), bubble]),
+  );
+  for (let turn = 1; turn < LEOPARD_TURNS; turn += 1) {
+    assert.equal(advanceLeopards(grid).length, 0);
+  }
+  assert.equal(advanceLeopards(grid).length, 1);
 });
 
 test("star thresholds and damaged saves fall back safely", () => {
