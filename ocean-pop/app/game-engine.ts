@@ -23,9 +23,7 @@ const RADIUS = 19;
 const DIAMETER = 40;
 const ROW_STEP = 34;
 const BOARD_TOP = 22;
-const DANGER_Y = 565;
 const SHOOTER_X = WIDTH / 2;
-const SHOOTER_Y = 675;
 const PROJECTILE_SPEED = 530;
 
 const KIND_COLORS: Record<BubbleKind, [string, string, string]> = {
@@ -157,6 +155,16 @@ export class OceanPopEngine {
   private penguinUntil = 0;
   private audio: TinyAudio;
   private resizeObserver: ResizeObserver | null = null;
+  private viewportHeight = HEIGHT;
+
+  private get shooterY() {
+    return this.viewportHeight - 55;
+  }
+
+  private get dangerY() {
+    const warningGap = Math.min(110, Math.max(76, this.viewportHeight * 0.15));
+    return this.shooterY - warningGap;
+  }
 
   constructor(canvas: HTMLCanvasElement, options: EngineOptions) {
     this.canvas = canvas;
@@ -180,13 +188,15 @@ export class OceanPopEngine {
   }
 
   private prepareCanvas() {
-    this.canvas.style.aspectRatio = `${WIDTH} / ${HEIGHT}`;
+    this.canvas.style.aspectRatio = "auto";
 
     const resize = () => {
       const rect = this.canvas.getBoundingClientRect();
       const dpr = Math.min(3, window.devicePixelRatio || 1);
       const pixelWidth = Math.max(1, Math.round(rect.width * dpr));
       const pixelHeight = Math.max(1, Math.round(rect.height * dpr));
+      const scale = pixelWidth / WIDTH;
+      this.viewportHeight = Math.max(430, pixelHeight / scale);
 
       if (this.canvas.width !== pixelWidth || this.canvas.height !== pixelHeight) {
         this.canvas.width = pixelWidth;
@@ -194,10 +204,10 @@ export class OceanPopEngine {
       }
 
       this.ctx.setTransform(
-        pixelWidth / WIDTH,
+        scale,
         0,
         0,
-        pixelHeight / HEIGHT,
+        scale,
         0,
         0,
       );
@@ -404,7 +414,7 @@ export class OceanPopEngine {
 
   private get nearDanger() {
     return [...this.grid.values()].some(
-      (bubble) => this.center(bubble.row, bubble.col).y > DANGER_Y - 75,
+      (bubble) => this.center(bubble.row, bubble.col).y > this.dangerY - 75,
     );
   }
 
@@ -547,7 +557,7 @@ export class OceanPopEngine {
     if (this.nearDanger) {
       this.setPenguin(4, 520);
       const crossed = [...this.grid.values()].some(
-        (bubble) => this.center(bubble.row, bubble.col).y + RADIUS >= DANGER_Y,
+        (bubble) => this.center(bubble.row, bubble.col).y + RADIUS >= this.dangerY,
       );
       if (crossed) this.finish(false);
     }
@@ -626,14 +636,14 @@ export class OceanPopEngine {
     }
     this.audio.unlock();
     const dx = this.aimX - SHOOTER_X;
-    const dy = Math.min(-35, this.aimY - SHOOTER_Y);
+    const dy = Math.min(-35, this.aimY - this.shooterY);
     const length = Math.max(1, Math.hypot(dx, dy));
     const clampedX = Math.max(-0.94, Math.min(0.94, dx / length));
     const clampedY = -Math.sqrt(1 - clampedX * clampedX);
     const speedBoost = 1 + (this.options.fireRateLevel - 1) * 0.08;
     this.projectiles.push({
       x: SHOOTER_X + clampedX * 62,
-      y: SHOOTER_Y + clampedY * 62,
+      y: this.shooterY + clampedY * 62,
       vx: clampedX * PROJECTILE_SPEED * speedBoost,
       vy: clampedY * PROJECTILE_SPEED * speedBoost,
       ammo,
@@ -649,7 +659,7 @@ export class OceanPopEngine {
 
   aim(x: number, y: number) {
     this.aimX = Math.max(8, Math.min(WIDTH - 8, x));
-    this.aimY = Math.max(40, Math.min(SHOOTER_Y - 50, y));
+    this.aimY = Math.max(40, Math.min(this.shooterY - 50, y));
   }
 
   press(x: number, y: number) {
@@ -716,7 +726,7 @@ export class OceanPopEngine {
 
   private draw(time: number) {
     const ctx = this.ctx;
-    ctx.clearRect(0, 0, WIDTH, HEIGHT);
+    ctx.clearRect(0, 0, WIDTH, this.viewportHeight);
     this.drawBackground(time);
     this.drawAim();
     for (const bubble of this.grid.values()) this.drawBubble(bubble, time);
@@ -738,18 +748,19 @@ export class OceanPopEngine {
 
   private drawBackground(time: number) {
     const ctx = this.ctx;
-    const gradient = ctx.createLinearGradient(0, 0, 0, HEIGHT);
+    const height = this.viewportHeight;
+    const gradient = ctx.createLinearGradient(0, 0, 0, height);
     gradient.addColorStop(0, "#074b87");
     gradient.addColorStop(0.48, "#0d78a8");
     gradient.addColorStop(1, "#062b59");
     ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, WIDTH, HEIGHT);
+    ctx.fillRect(0, 0, WIDTH, height);
 
     ctx.globalAlpha = 0.13;
     ctx.fillStyle = "#b8f5ff";
     for (let index = 0; index < 14; index += 1) {
       const x = (index * 71 + 23) % WIDTH;
-      const y = (HEIGHT - ((time * 0.014 + index * 53) % (HEIGHT + 80))) + 40;
+      const y = (height - ((time * 0.014 + index * 53) % (height + 80))) + 40;
       ctx.beginPath();
       ctx.arc(x, y, 2 + (index % 4) * 1.2, 0, Math.PI * 2);
       ctx.fill();
@@ -758,10 +769,10 @@ export class OceanPopEngine {
 
     ctx.fillStyle = "#0a5e72";
     ctx.beginPath();
-    ctx.moveTo(0, HEIGHT);
-    ctx.quadraticCurveTo(40, HEIGHT - 60, 88, HEIGHT);
-    ctx.quadraticCurveTo(145, HEIGHT - 50, 205, HEIGHT);
-    ctx.quadraticCurveTo(280, HEIGHT - 54, WIDTH, HEIGHT);
+    ctx.moveTo(0, height);
+    ctx.quadraticCurveTo(40, height - 60, 88, height);
+    ctx.quadraticCurveTo(145, height - 50, 205, height);
+    ctx.quadraticCurveTo(280, height - 54, WIDTH, height);
     ctx.fill();
 
     ctx.strokeStyle = "rgba(114, 227, 181, .45)";
@@ -769,14 +780,14 @@ export class OceanPopEngine {
     ctx.lineCap = "round";
     for (const x of [18, 350, 372]) {
       ctx.beginPath();
-      ctx.moveTo(x, HEIGHT);
+      ctx.moveTo(x, height);
       ctx.bezierCurveTo(
         x - 12,
-        HEIGHT - 40,
+        height - 40,
         x + 10,
-        HEIGHT - 62,
+        height - 62,
         x - 2,
-        HEIGHT - 92,
+        height - 92,
       );
       ctx.stroke();
     }
@@ -785,15 +796,15 @@ export class OceanPopEngine {
   private drawAim() {
     if (this.phase !== "playing") return;
     let dx = this.aimX - SHOOTER_X;
-    const dy = Math.min(-35, this.aimY - SHOOTER_Y);
+    const dy = Math.min(-35, this.aimY - this.shooterY);
     const length = Math.max(1, Math.hypot(dx, dy));
     dx = Math.max(-0.94, Math.min(0.94, dx / length));
     let vx = dx;
     const vy = -Math.sqrt(1 - vx * vx);
     let x = SHOOTER_X + vx * 64;
-    let y = SHOOTER_Y + vy * 64;
+    let y = this.shooterY + vy * 64;
     this.ctx.fillStyle = "rgba(222, 252, 255, .55)";
-    for (let step = 0; step < Math.ceil(HEIGHT / 12); step += 1) {
+    for (let step = 0; step < Math.ceil(this.viewportHeight / 12); step += 1) {
       x += vx * 12;
       y += vy * 12;
       if (x <= RADIUS || x >= WIDTH - RADIUS) vx *= -1;
@@ -814,8 +825,8 @@ export class OceanPopEngine {
     this.ctx.setLineDash([7, 7]);
     this.ctx.lineWidth = 2;
     this.ctx.beginPath();
-    this.ctx.moveTo(15, DANGER_Y);
-    this.ctx.lineTo(WIDTH - 15, DANGER_Y);
+    this.ctx.moveTo(15, this.dangerY);
+    this.ctx.lineTo(WIDTH - 15, this.dangerY);
     this.ctx.stroke();
     this.ctx.restore();
   }
@@ -823,7 +834,7 @@ export class OceanPopEngine {
   private drawPenguin() {
     const image = this.images[this.penguinFrame - 1] ?? this.images[0];
     const penguinX = 53;
-    const penguinY = HEIGHT - 120;
+    const penguinY = this.viewportHeight - 120;
     const penguinSize = 104;
 
     this.ctx.save();
@@ -865,13 +876,13 @@ export class OceanPopEngine {
 
   private drawCannon() {
     const ctx = this.ctx;
-    const angle = Math.atan2(this.aimY - SHOOTER_Y, this.aimX - SHOOTER_X);
+    const angle = Math.atan2(this.aimY - this.shooterY, this.aimX - SHOOTER_X);
     const directionX = Math.cos(angle);
     const directionY = Math.sin(angle);
 
     if (this.cannonImage.complete && this.cannonImage.naturalWidth) {
       ctx.save();
-      ctx.translate(SHOOTER_X, SHOOTER_Y + 5);
+      ctx.translate(SHOOTER_X, this.shooterY + 5);
       ctx.rotate(angle + Math.PI / 2);
       ctx.shadowColor = "rgba(0, 20, 48, .34)";
       ctx.shadowBlur = 10;
@@ -880,13 +891,13 @@ export class OceanPopEngine {
     } else {
       ctx.fillStyle = "#67cfea";
       ctx.beginPath();
-      ctx.arc(SHOOTER_X, SHOOTER_Y, 30, 0, Math.PI * 2);
+      ctx.arc(SHOOTER_X, this.shooterY, 30, 0, Math.PI * 2);
       ctx.fill();
     }
 
     this.drawProjectile(
       SHOOTER_X + directionX * 58,
-      SHOOTER_Y + directionY * 58,
+      this.shooterY + directionY * 58,
       this.currentKind,
       this.selectedAmmo,
       0.72,

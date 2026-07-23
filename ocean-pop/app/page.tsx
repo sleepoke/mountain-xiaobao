@@ -636,9 +636,11 @@ export default function Home() {
     event: React.PointerEvent<HTMLCanvasElement>,
   ) => {
     const rect = event.currentTarget.getBoundingClientRect();
+    const logicalHeight = (rect.height / rect.width) * 390;
     return {
       x: ((event.clientX - rect.left) / rect.width) * 390,
-      y: ((event.clientY - rect.top) / rect.height) * 730,
+      y: ((event.clientY - rect.top) / rect.height) * logicalHeight,
+      height: logicalHeight,
     };
   };
 
@@ -649,8 +651,8 @@ export default function Home() {
     const point = pointerPosition(event);
     const hitCannon =
       Math.abs(point.x - 195) <= 72 &&
-      point.y >= 575 &&
-      point.y <= 725;
+      point.y >= point.height - 170 &&
+      point.y <= point.height;
 
     if (hitCannon) {
       engineRef.current?.fire();
